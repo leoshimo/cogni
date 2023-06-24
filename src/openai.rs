@@ -18,7 +18,7 @@ pub struct Client {
 pub struct ChatCompletionRequest {
     model: String,
     messages: Vec<Message>,
-    temperature: Option<f32>,
+    temperature: f32,
 }
 
 /// Responses from chat_completion
@@ -34,7 +34,6 @@ pub struct ChatCompletionResponse {
     pub usage: Usage,
 }
 
-/// Errors from module
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
     #[error("API Key is not defined")]
@@ -44,13 +43,34 @@ pub enum Error {
     FailedToFetch(reqwest::Error),
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Clone)]
 pub struct Message {
     pub role: Role,
     pub content: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+impl Message {
+    pub fn system(content: &str) -> Message {
+        Message {
+            role: Role::System,
+            content: content.to_string(),
+        }
+    }
+    pub fn user(content: &str) -> Message {
+        Message {
+            role: Role::User,
+            content: content.to_string(),
+        }
+    }
+    pub fn assistant(content: &str) -> Message {
+        Message {
+            role: Role::Assistant,
+            content: content.to_string(),
+        }
+    }
+}
+
+#[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum Role {
     System,
