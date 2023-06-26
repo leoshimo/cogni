@@ -4,6 +4,8 @@ Unix native interface for LLMs
 
 ## Features
 
-- Designed for IO redirection
-- Client for OpenAI's chat completions endpoint - `cogni chat`
+- 🚧 Designed for IO redirection
+- Integration with OpenAI chat completions API
+- 🚧 Prompt Templates
+- 🚧 Integration with Function Call API
 
