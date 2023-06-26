@@ -3,7 +3,15 @@
 use crate::openai::Message;
 use clap::{arg, command, value_parser, ArgMatches, Command};
 
-/// Arguments parsed for chat completion CLI invocation
+/// CLI invocations that can be launched
+#[derive(Debug)]
+pub enum Invocation {
+    /// Invoke chat completion,
+    ChatCompletion(ChatCompletionArgs)
+}
+
+/// Arguments parsed for ChatCompletion
+#[derive(Debug, Default)]
 pub struct ChatCompletionArgs {
     pub api_key: Option<String>,
     pub messages: Vec<Message>,
@@ -13,12 +21,21 @@ pub struct ChatCompletionArgs {
 
 /// Parse commandline arguments into `ChatCompletionArgs`. May exit with help or error message
 #[must_use]
-pub fn parse() -> ChatCompletionArgs {
+pub fn parse() -> Invocation {
     cli().get_matches().into()
 }
 
+/// Top-level command
 fn cli() -> Command {
     command!()
+        .subcommand(chat_completion_cmd())
+        .subcommand_required(true)
+}
+
+/// Subcommand for chat completion interface
+fn chat_completion_cmd() -> Command {
+    Command::new("chat")
+        .about("Chat Completion")
         .arg(arg!(model: -m --model <MODEL> "Sets model").default_value("gpt-3.5-turbo"))
         .arg(
             arg!(temperature: -t --temperature <TEMP> "Sets temperature")
@@ -37,6 +54,26 @@ fn cli() -> Command {
                 .hide_env_values(true),
         )
 }
+
+impl From<ArgMatches> for Invocation {
+    fn from(matches: ArgMatches) -> Self {
+        use Invocation::*;
+
+        let (name, submatch) = matches.subcommand()
+            .expect("Subcommands are required");
+
+        match name {
+            "chat" => {
+                ChatCompletion(ChatCompletionArgs::from(submatch.to_owned()))
+            },
+            _ => {
+                panic!("Unrecognized subcommand");
+            }
+        }
+
+    }
+}
+
 
 impl From<ArgMatches> for ChatCompletionArgs {
     fn from(matches: ArgMatches) -> Self {
@@ -89,36 +126,40 @@ impl ChatCompletionArgs {
 
         messages
     }
+
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
     use anyhow::Result;
+    use super::Invocation::*;
 
     #[test]
-    fn no_args_is_err() {
-        let args = cli()
+    fn chat_no_args_is_err() {
+        let res = cli()
             .try_get_matches_from(vec!["cogni"])
-            .map(ChatCompletionArgs::from);
-        assert!(args.is_err());
+            .map(Invocation::from);
+        assert!(res.is_err());
     }
 
     #[test]
-    fn one_msgs() -> Result<()> {
-        let args = cli()
-            .try_get_matches_from(vec!["cogni", "-u", "USER"])
-            .map(ChatCompletionArgs::from)?;
+    fn chat_one_msgs() -> Result<()> {
+        let res = cli()
+            .try_get_matches_from(vec!["cogni", "chat", "-u", "USER"])
+            .map(Invocation::from)?;
+        let ChatCompletion(args) = res;
 
         assert_eq!(args.messages, vec![Message::user("USER")]);
         Ok(())
     }
 
     #[test]
-    fn many_msgs() -> Result<()> {
-        let args = cli()
-            .try_get_matches_from(vec!["cogni", "-u", "USER1", "-a", "ROBOT", "-u", "USER2"])
-            .map(ChatCompletionArgs::from)?;
+    fn chat_many_msgs() -> Result<()> {
+        let res = cli()
+            .try_get_matches_from(vec!["cogni", "chat", "-u", "USER1", "-a", "ROBOT", "-u", "USER2"])
+            .map(Invocation::from)?;
+        let ChatCompletion(args) = res;
 
         assert_eq!(
             args.messages,
@@ -133,12 +174,13 @@ mod test {
     }
 
     #[test]
-    fn many_msgs_with_system_prompt() -> Result<()> {
-        let args = cli()
+    fn chat_many_msgs_with_system_prompt() -> Result<()> {
+        let res = cli()
             .try_get_matches_from(vec![
-                "cogni", "-s", "SYSTEM", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
+                "cogni", "chat", "-s", "SYSTEM", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
             ])
-            .map(ChatCompletionArgs::from)?;
+            .map(Invocation::from)?;
+        let ChatCompletion(args) = res;
 
         assert_eq!(
             args.messages,
@@ -155,11 +197,12 @@ mod test {
 
     #[test]
     fn many_msgs_with_system_prompt_last() -> Result<()> {
-        let args = cli()
+        let res = cli()
             .try_get_matches_from(vec![
-                "cogni", "-s", "SYSTEM", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
+                "cogni", "chat", "-s", "SYSTEM", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
             ])
-            .map(ChatCompletionArgs::from)?;
+            .map(Invocation::from)?;
+        let ChatCompletion(args) = res;
 
         assert_eq!(
             args.messages,

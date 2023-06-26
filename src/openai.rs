@@ -1,3 +1,7 @@
+//! Interacting with OpenAI API
+
+use std::time::Duration;
+
 use chrono::serde::ts_seconds;
 use chrono::{DateTime, Utc};
 use derive_builder::Builder;
@@ -13,7 +17,7 @@ pub struct Client {
 }
 
 /// Requests for chat_completion
-/// Reference: https://platform.openai.com/docs/api-reference/chat
+/// Reference: <https://platform.openai.com/docs/api-reference/chat>
 #[derive(Builder, Default)]
 pub struct ChatCompletionRequest {
     model: String,
@@ -22,7 +26,7 @@ pub struct ChatCompletionRequest {
 }
 
 /// Responses from chat_completion
-/// Reference: https://platform.openai.com/docs/api-reference/chat
+/// Reference: <https://platform.openai.com/docs/api-reference/chat>
 #[derive(Debug, Deserialize)]
 pub struct ChatCompletionResponse {
     pub id: String,
@@ -38,6 +42,9 @@ pub struct ChatCompletionResponse {
 pub enum Error {
     #[error("API Key is not defined")]
     NoAPIKey,
+
+    #[error("Failed to initialize HTTP client")]
+    FailedToInitializeHTTPClient(reqwest::Error),
 
     #[error("Failed to fetch from API")]
     FailedToFetch(reqwest::Error),
@@ -100,11 +107,15 @@ pub struct Choice {
 }
 
 impl Client {
-    pub fn new(api_key: Option<String>) -> Client {
-        Client {
-            client: reqwest::Client::new(),
+    pub fn new(api_key: Option<String>) -> Result<Client, Error> {
+        let client = reqwest::Client::builder()
+            .timeout(Duration::from_secs(10))
+            .build()
+            .map_err(Error::FailedToInitializeHTTPClient)?;
+        Ok(Client {
+            client,
             api_key,
-        }
+        })
     }
 
     pub async fn chat_complete(
