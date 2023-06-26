@@ -29,7 +29,7 @@ pub struct ChatCompletionRequest {
 
 /// Responses from chat_completion
 /// Reference: <https://platform.openai.com/docs/api-reference/chat>
-#[derive(Builder, Default, Debug, Deserialize)]
+#[derive(Builder, Default, Debug, Serialize, Deserialize)]
 #[builder(default)]
 pub struct ChatCompletionResponse {
     pub id: String,
@@ -76,14 +76,14 @@ pub enum Role {
     User,
 }
 
-#[derive(Debug, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default)]
 pub struct Usage {
     pub prompt_tokens: u32,
     pub completion_tokens: u32,
     pub total_tokens: u32,
 }
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum FinishReason {
     Stop,
@@ -91,7 +91,7 @@ pub enum FinishReason {
     ContentFilter,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Choice {
     pub message: Message,
     pub finish_reason: FinishReason,

@@ -1,9 +1,10 @@
 //! Command line interface for cogni
 
+// TODO: Support stdin
+
 use crate::openai::Message;
 use clap::{
-    arg, builder::PossibleValue, command, value_parser, ArgGroup, ArgMatches, Command,
-    ValueEnum,
+    arg, builder::PossibleValue, command, value_parser, ArgGroup, ArgMatches, Command, ValueEnum,
 };
 use derive_builder::Builder;
 
@@ -16,6 +17,7 @@ pub enum Invocation {
 
 /// Arguments parsed for ChatCompletion
 #[derive(Debug, Default, Builder)]
+#[builder(default)]
 pub struct ChatCompletionArgs {
     pub api_key: Option<String>,
     pub messages: Vec<Message>,
@@ -125,6 +127,11 @@ impl From<ArgMatches> for ChatCompletionArgs {
 }
 
 impl ChatCompletionArgs {
+    /// Builder
+    pub fn builder() -> ChatCompletionArgsBuilder {
+        ChatCompletionArgsBuilder::default()
+    }
+
     /// Given `clap::ArgMatches`, creates a vector of `Message` with assigned roles and ordering
     fn messages_from_matches(matches: &ArgMatches) -> Vec<Message> {
         let mut messages = vec![];

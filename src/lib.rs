@@ -17,4 +17,7 @@ pub enum Error {
 
     #[error("IO Error")]
     IO(std::io::Error),
+
+    #[error("JSON Serialization Error")]
+    JSON(serde_json::Error),
 }
