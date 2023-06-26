@@ -67,7 +67,6 @@ fn show_response(
 #[cfg(test)]
 mod test {
 
-    use std::fmt::Write;
     use crate::{
         cli::ChatCompletionArgs,
         openai::{ChatCompletionResponse, Choice, FinishReason, Message},

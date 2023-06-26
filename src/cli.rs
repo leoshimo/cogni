@@ -1,7 +1,10 @@
 //! Command line interface for cogni
 
 use crate::openai::Message;
-use clap::{arg, command, value_parser, ArgMatches, Command};
+use clap::{
+    arg, builder::PossibleValue, command, value_parser, ArgGroup, ArgMatches, Command,
+    ValueEnum,
+};
 use derive_builder::Builder;
 
 /// CLI invocations that can be launched
@@ -18,6 +21,16 @@ pub struct ChatCompletionArgs {
     pub messages: Vec<Message>,
     pub model: String,
     pub temperature: f32,
+    pub output_format: OutputFormat,
+}
+
+/// The format that invocation's results are in
+#[derive(Debug, Default, PartialEq, Clone, Copy)]
+pub enum OutputFormat {
+    #[default]
+    Plaintext,
+    JSON,
+    JSONPretty,
 }
 
 /// Parse commandline arguments into `ChatCompletionArgs`. May exit with help or error message
@@ -54,6 +67,19 @@ fn chat_completion_cmd() -> Command {
                 .env("OPENAI_API_KEY")
                 .hide_env_values(true),
         )
+        .arg(
+            arg!(output_format: --output_format <FORMAT> "Sets output format")
+                .value_parser(value_parser!(OutputFormat))
+                .conflicts_with("output_format_short")
+                .default_value_ifs([
+                    ("json", "true", Some("json")),
+                    ("jsonp", "true", Some("jsonpretty")),
+                ])
+                .default_value("plaintext"),
+        )
+        .arg(arg!(--json "Shorthand for --output_format json"))
+        .arg(arg!(--jsonp "Shorthand for --output_format jsonpretty"))
+        .group(ArgGroup::new("output_format_short").args(["json", "jsonp"]))
 }
 
 impl From<ArgMatches> for Invocation {
@@ -84,11 +110,16 @@ impl From<ArgMatches> for ChatCompletionArgs {
             .get_one::<f32>("temperature")
             .expect("Temperature is required");
 
+        let output_format = *matches
+            .get_one::<OutputFormat>("output_format")
+            .expect("Output format is required");
+
         Self {
             api_key,
             messages,
             model,
             temperature,
+            output_format,
         }
     }
 }
@@ -121,6 +152,20 @@ impl ChatCompletionArgs {
         }
 
         messages
+    }
+}
+
+impl ValueEnum for OutputFormat {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[Self::Plaintext, Self::JSON, Self::JSONPretty]
+    }
+
+    fn to_possible_value(&self) -> Option<PossibleValue> {
+        Some(match self {
+            Self::Plaintext => PossibleValue::new("plaintext"),
+            Self::JSON => PossibleValue::new("json"),
+            Self::JSONPretty => PossibleValue::new("jsonpretty"),
+        })
     }
 }
 
@@ -193,7 +238,7 @@ mod test {
     }
 
     #[test]
-    fn many_msgs_with_system_prompt_last() -> Result<()> {
+    fn chat_many_msgs_with_system_prompt_last() -> Result<()> {
         let res = cli()
             .try_get_matches_from(vec![
                 "cogni", "chat", "-s", "SYSTEM", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
@@ -210,6 +255,62 @@ mod test {
                 Message::user("USER2"),
             ],
             "system message is always brought to front, followed by assistant and user messages in order");
+
+        Ok(())
+    }
+
+    #[test]
+    fn chat_output_format_default() -> Result<()> {
+        let res = cli()
+            .try_get_matches_from(vec!["cogni", "chat", "-u", "ABC"])
+            .map(Invocation::from)?;
+        let ChatCompletion(args) = res;
+
+        assert_eq!(
+            args.output_format,
+            OutputFormat::Plaintext,
+            "Default output format should be plaintext"
+        );
+        Ok(())
+    }
+
+    #[test]
+    fn chat_output_format_explicit_json() -> Result<()> {
+        let res = cli()
+            .try_get_matches_from(vec![
+                "cogni",
+                "chat",
+                "-u",
+                "ABC",
+                "--output_format",
+                "json",
+            ])
+            .map(Invocation::from)?;
+        let ChatCompletion(args) = res;
+
+        assert_eq!(args.output_format, OutputFormat::JSON);
+        Ok(())
+    }
+
+    #[test]
+    fn chat_output_format_shorthand_json() -> Result<()> {
+        let res = cli()
+            .try_get_matches_from(vec!["cogni", "chat", "-u", "ABC", "--json"])
+            .map(Invocation::from)?;
+        let ChatCompletion(args) = res;
+
+        assert_eq!(args.output_format, OutputFormat::JSON);
+        Ok(())
+    }
+
+    #[test]
+    fn chat_output_format_shorthand_jsonp() -> Result<()> {
+        let res = cli()
+            .try_get_matches_from(vec!["cogni", "chat", "-u", "ABC", "--jsonp"])
+            .map(Invocation::from)?;
+        let ChatCompletion(args) = res;
+
+        assert_eq!(args.output_format, OutputFormat::JSONPretty);
         Ok(())
     }
 }
