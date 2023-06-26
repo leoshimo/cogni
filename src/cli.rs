@@ -7,7 +7,7 @@ use clap::{arg, command, value_parser, ArgMatches, Command};
 #[derive(Debug)]
 pub enum Invocation {
     /// Invoke chat completion,
-    ChatCompletion(ChatCompletionArgs)
+    ChatCompletion(ChatCompletionArgs),
 }
 
 /// Arguments parsed for ChatCompletion
@@ -59,21 +59,16 @@ impl From<ArgMatches> for Invocation {
     fn from(matches: ArgMatches) -> Self {
         use Invocation::*;
 
-        let (name, submatch) = matches.subcommand()
-            .expect("Subcommands are required");
+        let (name, submatch) = matches.subcommand().expect("Subcommands are required");
 
         match name {
-            "chat" => {
-                ChatCompletion(ChatCompletionArgs::from(submatch.to_owned()))
-            },
+            "chat" => ChatCompletion(ChatCompletionArgs::from(submatch.to_owned())),
             _ => {
                 panic!("Unrecognized subcommand");
             }
         }
-
     }
 }
-
 
 impl From<ArgMatches> for ChatCompletionArgs {
     fn from(matches: ArgMatches) -> Self {
@@ -126,14 +121,13 @@ impl ChatCompletionArgs {
 
         messages
     }
-
 }
 
 #[cfg(test)]
 mod test {
+    use super::Invocation::*;
     use super::*;
     use anyhow::Result;
-    use super::Invocation::*;
 
     #[test]
     fn chat_no_args_is_err() {
@@ -157,7 +151,9 @@ mod test {
     #[test]
     fn chat_many_msgs() -> Result<()> {
         let res = cli()
-            .try_get_matches_from(vec!["cogni", "chat", "-u", "USER1", "-a", "ROBOT", "-u", "USER2"])
+            .try_get_matches_from(vec![
+                "cogni", "chat", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
+            ])
             .map(Invocation::from)?;
         let ChatCompletion(args) = res;
 

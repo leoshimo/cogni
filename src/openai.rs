@@ -2,6 +2,7 @@
 
 use std::time::Duration;
 
+use crate::Error;
 use chrono::serde::ts_seconds;
 use chrono::{DateTime, Utc};
 use derive_builder::Builder;
@@ -36,18 +37,6 @@ pub struct ChatCompletionResponse {
     pub choices: Vec<Choice>,
     pub model: String,
     pub usage: Usage,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum Error {
-    #[error("API Key is not defined")]
-    NoAPIKey,
-
-    #[error("Failed to initialize HTTP client")]
-    FailedToInitializeHTTPClient(reqwest::Error),
-
-    #[error("Failed to fetch from API")]
-    FailedToFetch(reqwest::Error),
 }
 
 #[derive(PartialEq, Eq, Debug, Serialize, Deserialize, Clone)]
@@ -111,11 +100,8 @@ impl Client {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(10))
             .build()
-            .map_err(Error::FailedToInitializeHTTPClient)?;
-        Ok(Client {
-            client,
-            api_key,
-        })
+            .map_err(Error::FailedToFetch)?;
+        Ok(Client { client, api_key })
     }
 
     pub async fn chat_complete(
