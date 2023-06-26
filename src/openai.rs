@@ -20,6 +20,7 @@ pub struct Client {
 /// Requests for chat_completion
 /// Reference: <https://platform.openai.com/docs/api-reference/chat>
 #[derive(Builder, Default)]
+#[builder(default)]
 pub struct ChatCompletionRequest {
     model: String,
     messages: Vec<Message>,
@@ -28,7 +29,8 @@ pub struct ChatCompletionRequest {
 
 /// Responses from chat_completion
 /// Reference: <https://platform.openai.com/docs/api-reference/chat>
-#[derive(Debug, Deserialize)]
+#[derive(Builder, Default, Debug, Deserialize)]
+#[builder(default)]
 pub struct ChatCompletionResponse {
     pub id: String,
     pub object: String,
@@ -74,14 +76,14 @@ pub enum Role {
     User,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct Usage {
     pub prompt_tokens: u32,
     pub completion_tokens: u32,
     pub total_tokens: u32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, Clone)]
 #[serde(rename_all = "lowercase")]
 pub enum FinishReason {
     Stop,
@@ -89,7 +91,7 @@ pub enum FinishReason {
     ContentFilter,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Clone, Deserialize)]
 pub struct Choice {
     pub message: Message,
     pub finish_reason: FinishReason,
@@ -134,5 +136,11 @@ impl Client {
 impl ChatCompletionRequest {
     pub fn builder() -> ChatCompletionRequestBuilder {
         ChatCompletionRequestBuilder::default()
+    }
+}
+
+impl ChatCompletionResponse {
+    pub fn builder() -> ChatCompletionResponseBuilder {
+        ChatCompletionResponseBuilder::default()
     }
 }

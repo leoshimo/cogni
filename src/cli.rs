@@ -2,6 +2,7 @@
 
 use crate::openai::Message;
 use clap::{arg, command, value_parser, ArgMatches, Command};
+use derive_builder::Builder;
 
 /// CLI invocations that can be launched
 #[derive(Debug)]
@@ -11,7 +12,7 @@ pub enum Invocation {
 }
 
 /// Arguments parsed for ChatCompletion
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Builder)]
 pub struct ChatCompletionArgs {
     pub api_key: Option<String>,
     pub messages: Vec<Message>,
