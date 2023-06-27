@@ -1,7 +1,5 @@
 //! Command line interface for cogni
 
-// TODO: Support stdin
-
 use crate::openai::Message;
 use clap::{
     arg, builder::PossibleValue, command, value_parser, ArgGroup, ArgMatches, Command, ValueEnum,
@@ -24,6 +22,7 @@ pub struct ChatCompletionArgs {
     pub model: String,
     pub temperature: f32,
     pub output_format: OutputFormat,
+    pub file: String,
 }
 
 /// The format that invocation's results are in
@@ -63,7 +62,7 @@ fn chat_completion_cmd() -> Command {
             arg!(assistant_messages: -a --assistant <MSG> ... "Appends assistant message")
                 .required(false),
         )
-        .arg(arg!(user_messages: -u --user <MSG> ... "Appends user message").required(true))
+        .arg(arg!(user_messages: -u --user <MSG> ... "Appends user message").required(false))
         .arg(
             arg!(api_key: --apikey <API_KEY> "Sets API Key to use")
                 .env("OPENAI_API_KEY")
@@ -82,6 +81,7 @@ fn chat_completion_cmd() -> Command {
         .arg(arg!(--json "Shorthand for --output_format json"))
         .arg(arg!(--jsonp "Shorthand for --output_format jsonpretty"))
         .group(ArgGroup::new("output_format_short").args(["json", "jsonp"]))
+        .arg(arg!(file: [FILE]).default_value("-"))
 }
 
 impl From<ArgMatches> for Invocation {
@@ -116,12 +116,18 @@ impl From<ArgMatches> for ChatCompletionArgs {
             .get_one::<OutputFormat>("output_format")
             .expect("Output format is required");
 
+        let file = matches
+            .get_one::<String>("file")
+            .expect("File is required")
+            .to_string();
+
         Self {
             api_key,
             messages,
             model,
             temperature,
             output_format,
+            file,
         }
     }
 }
@@ -318,6 +324,28 @@ mod test {
         let ChatCompletion(args) = res;
 
         assert_eq!(args.output_format, OutputFormat::JSONPretty);
+        Ok(())
+    }
+
+    #[test]
+    fn chat_file_default() -> Result<()> {
+        let res = cli()
+            .try_get_matches_from(vec!["cogni", "chat"])
+            .map(Invocation::from)?;
+        let ChatCompletion(args) = res;
+
+        assert_eq!(args.file, "-");
+        Ok(())
+    }
+
+    #[test]
+    fn chat_file_positional() -> Result<()> {
+        let res = cli()
+            .try_get_matches_from(vec!["cogni", "chat", "dialog_log"])
+            .map(Invocation::from)?;
+        let ChatCompletion(args) = res;
+
+        assert_eq!(args.file, "dialog_log");
         Ok(())
     }
 }

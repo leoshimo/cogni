@@ -98,12 +98,12 @@ pub struct Choice {
 }
 
 impl Client {
-    pub fn new(api_key: Option<String>) -> Result<Client, Error> {
+    pub fn new(api_key: Option<String>) -> Result<Self, Error> {
         let client = reqwest::Client::builder()
             .timeout(Duration::from_secs(10))
             .build()
             .map_err(Error::FailedToFetch)?;
-        Ok(Client { client, api_key })
+        Ok(Self { client, api_key })
     }
 
     pub async fn chat_complete(
