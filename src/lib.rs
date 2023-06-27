@@ -1,8 +1,10 @@
 pub mod cli;
 pub mod exec;
 pub mod openai;
+pub mod parse;
 
 pub use exec::exec;
+pub use parse::parse_messages;
 
 #[derive(Debug, thiserror::Error)]
 pub enum Error {
