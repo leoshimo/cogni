@@ -33,7 +33,7 @@ mod test {
     #[test]
     fn parse_long_message_from_file() {
         let file = assert_fs::NamedTempFile::new("input.txt").unwrap();
-        file.write_str(&"Hello world").unwrap();
+        file.write_str("Hello world").unwrap();
 
         let mut file = File::open(file.path()).unwrap();
         let messages = parse_messages(&mut file).expect("should succeed");

@@ -14,6 +14,9 @@ pub enum Error {
     #[error("Error from HTTP client - {0}")]
     FailedToFetch(reqwest::Error),
 
+    #[error("No input provided")]
+    NoInput,
+
     #[error("Unexpected response: {0}")]
     UnexpectedResponse(String),
 

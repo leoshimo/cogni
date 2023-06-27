@@ -1,15 +1,17 @@
 //! Executor for cogni
 
-// TODO: Support stdin and files
-
 use crate::cli::ChatCompletionArgs;
 use crate::cli::Invocation;
 use crate::cli::OutputFormat;
 use crate::openai;
 use crate::Error;
+use crate::openai::Message;
 
 use anyhow::{Context, Result};
 use openai::{ChatCompletionResponse, FinishReason};
+use std::fs::File;
+use std::io::IsTerminal;
+use std::io::Read;
 use std::io::{self, BufWriter, Write};
 
 /// Execute the invocation
@@ -17,14 +19,20 @@ pub async fn exec(inv: Invocation) -> Result<()> {
     use Invocation::*;
 
     match inv {
+        // TODO: Move into chat module?
         ChatCompletion(args) => {
             let client = openai::Client::new(args.api_key.clone())
                 .with_context(|| "Failed to initialize HTTP client")?;
 
+            let msgs = [args.messages.clone(), read_messages_from_file(&args.file)?].concat();
+            if msgs.is_empty() {
+                return Err(Error::NoInput.into());
+            }
+
             // TODO: Lifetimes for `ChatCompletionRequest` fields
             let request = openai::ChatCompletionRequest::builder()
                 .model(args.model.clone())
-                .messages(args.messages.clone())
+                .messages(msgs)
                 .temperature(args.temperature)
                 .build()
                 .with_context(|| "Failed to create request")?;
@@ -35,6 +43,30 @@ pub async fn exec(inv: Invocation) -> Result<()> {
     }
 
     Ok(())
+}
+
+/// Read messages from non-tty stdin or file specified by `args.file`
+fn read_messages_from_file(file: &str) -> Result<Vec<Message>> {
+    let reader: Option<Box<dyn Read>> = match file {
+        "-" => {
+            let stdin = io::stdin();
+            if stdin.is_terminal() {
+                None
+            } else {
+                Some(Box::new(stdin))
+            }
+        },
+        file => Some(Box::new(File::open(file)?))
+    };
+
+    match reader {
+        None => Ok(vec![]),
+        Some(mut reader) => {
+            let mut content = String::new();
+            reader.read_to_string(&mut content)?;
+            Ok(vec![Message::user(&content)])
+        }
+    }
 }
 
 /// Show formatted output for `ChatCompletionRequest`
