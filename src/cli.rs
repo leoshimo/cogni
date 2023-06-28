@@ -81,7 +81,7 @@ fn chat_completion_cmd() -> Command {
         .arg(arg!(--json "Shorthand for --output_format json"))
         .arg(arg!(--jsonp "Shorthand for --output_format jsonpretty"))
         .group(ArgGroup::new("output_format_short").args(["json", "jsonp"]))
-        .arg(arg!(file: [FILE]).default_value("-"))
+        .arg(arg!(file: [FILE] "File providing messages to append to chat log. If \"-\", reads from non-tty stdin").default_value("-"))
 }
 
 impl From<ArgMatches> for Invocation {

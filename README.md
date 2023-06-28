@@ -6,7 +6,7 @@ Unix native interface for LLMs
 
 - 🚧 Designed for IO redirection
 - Integration with OpenAI chat completions API
-- 🚧 Prompt Templates
+- 🚧 Prompt Commands via Templates
 - 🚧 Integration with Function Call API
 - 🚧 Integration with Emacs
 - 🚧 Integration with Nvim
