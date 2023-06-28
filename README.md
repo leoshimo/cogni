@@ -10,3 +10,4 @@ Unix native interface for LLMs
 - 🚧 Integration with Function Call API
 - 🚧 Integration with Emacs
 - 🚧 Integration with Nvim
+- 🚧 Integration with Raycast
