@@ -24,7 +24,10 @@ pub async fn exec(inv: Invocation) -> Result<()> {
             let client = openai::Client::new(args.api_key.clone())
                 .with_context(|| "Failed to initialize HTTP client")?;
 
-            let msgs = [args.messages.clone(), read_messages_from_file(&args.file)?].concat();
+            let file_msgs = read_messages_from_file(&args.file)
+                .with_context(|| format!("Failed to open {}", &args.file))?;
+
+            let msgs = [args.messages.clone(), file_msgs].concat();
             if msgs.is_empty() {
                 return Err(Error::NoInput.into());
             }
