@@ -56,8 +56,8 @@ fn read_messages_from_file(file: &str) -> Result<Vec<Message>> {
             } else {
                 Some(Box::new(stdin))
             }
-        },
-        file => Some(Box::new(File::open(file)?))
+        }
+        file => Some(Box::new(File::open(file)?)),
     };
 
     match reader {
@@ -111,23 +111,31 @@ fn show_response(
 
 #[cfg(test)]
 mod test {
+    use std::time::Duration;
+
+    use chrono::DateTime;
     use predicates::prelude::*;
     use predicates::str;
 
     use crate::{
-        cli::{ChatCompletionArgs, OutputFormat},
-        openai::{ChatCompletionResponse, Choice, FinishReason, Message},
+        cli::{ChatCompletionArgs, ChatCompletionArgsBuilder, OutputFormat},
+        openai::{
+            ChatCompletionResponse, ChatCompletionResponseBuilder, Choice, FinishReason, Message,
+            Usage,
+        },
     };
 
-    use super::show_response;
+    use super::*;
 
     use anyhow::Result;
 
     #[test]
     fn show_chat_response_plaintext() -> Result<()> {
         let mut output = vec![];
-        let args = ChatCompletionArgs::default();
-        let resp = ChatCompletionResponse::builder()
+        let args = default_args()
+            .output_format(OutputFormat::Plaintext)
+            .build()?;
+        let resp = default_resp()
             .choices(vec![Choice {
                 message: Message::assistant("Hello world"),
                 finish_reason: FinishReason::Stop,
@@ -145,10 +153,8 @@ mod test {
     #[test]
     fn show_chat_response_json() -> Result<()> {
         let mut output = vec![];
-        let args = ChatCompletionArgs::builder()
-            .output_format(OutputFormat::JSON)
-            .build()?;
-        let resp = ChatCompletionResponse::builder()
+        let args = default_args().output_format(OutputFormat::JSON).build()?;
+        let resp = default_resp()
             .choices(vec![Choice {
                 message: Message::assistant("Hello world"),
                 finish_reason: FinishReason::Stop,
@@ -169,10 +175,10 @@ mod test {
     #[test]
     fn show_chat_response_json_pretty() -> Result<()> {
         let mut output = vec![];
-        let args = ChatCompletionArgs::builder()
+        let args = default_args()
             .output_format(OutputFormat::JSONPretty)
             .build()?;
-        let resp = ChatCompletionResponse::builder()
+        let resp = default_resp()
             .choices(vec![Choice {
                 message: Message::assistant("Hello world"),
                 finish_reason: FinishReason::Stop,
@@ -188,5 +194,28 @@ mod test {
         assert!(is_json.eval(&dbg!(output)));
 
         Ok(())
+    }
+
+    fn default_args() -> ChatCompletionArgsBuilder {
+        ChatCompletionArgs::builder()
+            .api_key(Some(String::default()))
+            .messages(vec![])
+            .model(String::default())
+            .temperature(1.0)
+            .output_format(OutputFormat::Plaintext)
+            .timeout(Duration::from_secs(10))
+            .file("-".to_string())
+            .to_owned()
+    }
+
+    fn default_resp() -> ChatCompletionResponseBuilder {
+        ChatCompletionResponse::builder()
+            .id(String::default())
+            .object(String::default())
+            .created(DateTime::default())
+            .choices(vec![])
+            .model(String::default())
+            .usage(Usage::default())
+            .to_owned()
     }
 }

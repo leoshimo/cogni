@@ -17,7 +17,6 @@ pub enum Invocation {
 
 /// Arguments parsed for ChatCompletion
 #[derive(Debug, Default, Builder)]
-#[builder(default)]
 pub struct ChatCompletionArgs {
     pub api_key: Option<String>,
     pub messages: Vec<Message>,
