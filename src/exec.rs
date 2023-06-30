@@ -4,8 +4,8 @@ use crate::cli::ChatCompletionArgs;
 use crate::cli::Invocation;
 use crate::cli::OutputFormat;
 use crate::openai;
-use crate::Error;
 use crate::openai::Message;
+use crate::Error;
 
 use anyhow::{Context, Result};
 use openai::{ChatCompletionResponse, FinishReason};
@@ -34,6 +34,7 @@ pub async fn exec(inv: Invocation) -> Result<()> {
                 .model(args.model.clone())
                 .messages(msgs)
                 .temperature(args.temperature)
+                .timeout(args.timeout)
                 .build()
                 .with_context(|| "Failed to create request")?;
 

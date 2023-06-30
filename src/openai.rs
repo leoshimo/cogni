@@ -20,17 +20,16 @@ pub struct Client {
 /// Requests for chat_completion
 /// Reference: <https://platform.openai.com/docs/api-reference/chat>
 #[derive(Builder, Default)]
-#[builder(default)]
 pub struct ChatCompletionRequest {
     model: String,
     messages: Vec<Message>,
     temperature: f32,
+    timeout: Duration,
 }
 
 /// Responses from chat_completion
 /// Reference: <https://platform.openai.com/docs/api-reference/chat>
 #[derive(Builder, Default, Debug, Serialize, Deserialize)]
-#[builder(default)]
 pub struct ChatCompletionResponse {
     pub id: String,
     pub object: String,
@@ -100,7 +99,6 @@ pub struct Choice {
 impl Client {
     pub fn new(api_key: Option<String>) -> Result<Self, Error> {
         let client = reqwest::Client::builder()
-            .timeout(Duration::from_secs(10))
             .build()
             .map_err(Error::FailedToFetch)?;
         Ok(Self { client, api_key })
@@ -117,6 +115,7 @@ impl Client {
             .client
             .post("https://api.openai.com/v1/chat/completions")
             .bearer_auth(api_key)
+            .timeout(request.timeout)
             .header("Content-Type", "application/json")
             .json(&json!({
                 "model": model,

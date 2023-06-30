@@ -1,5 +1,7 @@
 //! Command line interface for cogni
 
+use std::time::Duration;
+
 use crate::openai::Message;
 use clap::{
     arg, builder::PossibleValue, command, value_parser, ArgGroup, ArgMatches, Command, ValueEnum,
@@ -23,6 +25,7 @@ pub struct ChatCompletionArgs {
     pub temperature: f32,
     pub output_format: OutputFormat,
     pub file: String,
+    pub timeout: Duration,
 }
 
 /// The format that invocation's results are in
@@ -55,7 +58,12 @@ fn chat_completion_cmd() -> Command {
         .arg(
             arg!(temperature: -t --temperature <TEMP> "Sets temperature")
                 .value_parser(value_parser!(f32))
-                .default_value("1.0"),
+                .default_value("0.0"),
+        )
+        .arg(
+            arg!(timeout: -T --timeout <DURATION> "Sets timeout duration in seconds")
+                .value_parser(value_parser!(u64))
+                .default_value("10")
         )
         .arg(arg!(system_message: -s --system <MSG> "Sets system prompt").required(false))
         .arg(
@@ -112,6 +120,11 @@ impl From<ArgMatches> for ChatCompletionArgs {
             .get_one::<f32>("temperature")
             .expect("Temperature is required");
 
+        let timeout = matches
+            .get_one::<u64>("timeout")
+            .map(|t| Duration::from_secs(*t))
+            .expect("Timeout is required");
+
         let output_format = *matches
             .get_one::<OutputFormat>("output_format")
             .expect("Output format is required");
@@ -126,6 +139,7 @@ impl From<ArgMatches> for ChatCompletionArgs {
             messages,
             model,
             temperature,
+            timeout,
             output_format,
             file,
         }
