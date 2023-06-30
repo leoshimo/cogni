@@ -29,7 +29,7 @@ pub async fn exec(inv: Invocation) -> Result<()> {
 
             let msgs = [args.messages.clone(), file_msgs].concat();
             if msgs.is_empty() {
-                return Err(Error::NoInput.into());
+                return Err(Error::NoMessagesProvided.into());
             }
 
             // TODO: Lifetimes for `ChatCompletionRequest` fields
