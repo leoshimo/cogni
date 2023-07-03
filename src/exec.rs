@@ -1,18 +1,13 @@
 //! Executor for cogni
 
-use crate::cli::ChatCompletionArgs;
-use crate::cli::Invocation;
-use crate::cli::OutputFormat;
-use crate::openai;
-use crate::openai::Message;
+use crate::cli::{ChatCompletionArgs, Invocation, OutputFormat};
+use crate::openai::{self, Message};
 use crate::Error;
-
 use anyhow::{Context, Result};
+
 use openai::{ChatCompletionResponse, FinishReason};
 use std::fs::File;
-use std::io::IsTerminal;
-use std::io::Read;
-use std::io::{self, BufWriter, Write};
+use std::io::{self, BufWriter, IsTerminal, Read, Write};
 
 /// Execute the invocation
 pub async fn exec(inv: Invocation) -> Result<()> {
@@ -22,10 +17,10 @@ pub async fn exec(inv: Invocation) -> Result<()> {
         // TODO: Move into chat module?
         ChatCompletion(args) => {
             let client = openai::Client::new(args.api_key.clone())
-                .with_context(|| "Failed to initialize HTTP client")?;
+                .with_context(|| "failed to create http client")?;
 
             let file_msgs = read_messages_from_file(&args.file)
-                .with_context(|| format!("Failed to open {}", &args.file))?;
+                .with_context(|| format!("failed to open {}", &args.file))?;
 
             let msgs = [args.messages.clone(), file_msgs].concat();
             if msgs.is_empty() {
@@ -39,9 +34,12 @@ pub async fn exec(inv: Invocation) -> Result<()> {
                 .temperature(args.temperature)
                 .timeout(args.timeout)
                 .build()
-                .with_context(|| "Failed to create request")?;
+                .with_context(|| "failed to create request")?;
 
-            let res = client.chat_complete(&request).await?;
+            let res = client
+                .chat_complete(&request)
+                .await
+                .with_context(|| "failed to fetch request")?;
             show_response(io::stdout(), &args, &res)?;
         }
     }

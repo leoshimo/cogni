@@ -199,7 +199,8 @@ impl ValueEnum for OutputFormat {
 mod test {
     use super::Invocation::*;
     use super::*;
-    use anyhow::Result;
+
+    type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
     #[test]
     fn chat_no_args_is_err() {
