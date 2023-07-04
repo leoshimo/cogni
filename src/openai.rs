@@ -30,9 +30,8 @@ pub struct ChatCompletionRequest {
 /// Responses from chat_completion
 /// Reference: <https://platform.openai.com/docs/api-reference/chat>
 #[derive(Builder, Default, Debug, Serialize, Deserialize)]
-pub struct ChatCompletionResponse {
+pub struct ChatCompletion {
     pub id: String,
-    pub object: String,
     #[serde(with = "ts_seconds")]
     pub created: DateTime<Utc>,
     pub choices: Vec<Choice>,
@@ -75,14 +74,14 @@ pub enum Role {
     User,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, Default)]
+#[derive(Debug, Serialize, Deserialize, Clone, Default, PartialEq, Eq)]
 pub struct Usage {
     pub prompt_tokens: u32,
     pub completion_tokens: u32,
     pub total_tokens: u32,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum FinishReason {
     Stop,
@@ -90,7 +89,7 @@ pub enum FinishReason {
     ContentFilter,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Choice {
     pub message: Message,
     pub finish_reason: FinishReason,
@@ -107,7 +106,7 @@ impl Client {
     pub async fn chat_complete(
         &self,
         request: &ChatCompletionRequest,
-    ) -> Result<ChatCompletionResponse, Error> {
+    ) -> Result<ChatCompletion, Error> {
         let api_key = &self.api_key.as_ref().ok_or(Error::NoAPIKey)?;
         let model = &request.model;
 
@@ -126,7 +125,7 @@ impl Client {
             .await
             .map_err(Error::FailedToFetch)?;
 
-        let res: ChatCompletionResponse = resp.json().await.map_err(Error::FailedToFetch)?;
+        let res: ChatCompletion = resp.json().await.map_err(Error::FailedToFetch)?;
 
         Ok(res)
     }
@@ -138,8 +137,8 @@ impl ChatCompletionRequest {
     }
 }
 
-impl ChatCompletionResponse {
-    pub fn builder() -> ChatCompletionResponseBuilder {
-        ChatCompletionResponseBuilder::default()
+impl ChatCompletion {
+    pub fn builder() -> ChatCompletionBuilder {
+        ChatCompletionBuilder::default()
     }
 }

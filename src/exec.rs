@@ -5,7 +5,7 @@ use crate::openai::{self, Message};
 use crate::Error;
 use anyhow::{Context, Result};
 
-use openai::{ChatCompletionResponse, FinishReason};
+use openai::{ChatCompletion, FinishReason};
 use std::fs::File;
 use std::io::{self, BufWriter, IsTerminal, Read, Write};
 
@@ -75,7 +75,7 @@ fn read_messages_from_file(file: &str) -> Result<Vec<Message>> {
 fn show_response(
     dest: impl Write,
     args: &ChatCompletionArgs,
-    resp: &ChatCompletionResponse,
+    resp: &ChatCompletion,
 ) -> Result<(), Error> {
     let mut writer = BufWriter::new(dest);
     let choice = match resp.choices.len() {
@@ -120,10 +120,7 @@ mod test {
 
     use crate::{
         cli::{ChatCompletionArgs, ChatCompletionArgsBuilder, OutputFormat},
-        openai::{
-            ChatCompletionResponse, ChatCompletionResponseBuilder, Choice, FinishReason, Message,
-            Usage,
-        },
+        openai::{ChatCompletion, ChatCompletionBuilder, Choice, FinishReason, Message, Usage},
     };
 
     use super::*;
@@ -209,10 +206,9 @@ mod test {
             .to_owned()
     }
 
-    fn default_resp() -> ChatCompletionResponseBuilder {
-        ChatCompletionResponse::builder()
+    fn default_resp() -> ChatCompletionBuilder {
+        ChatCompletion::builder()
             .id(String::default())
-            .object(String::default())
             .created(DateTime::default())
             .choices(vec![])
             .model(String::default())
