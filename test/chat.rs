@@ -4,3 +4,4 @@
 // TODO: Test for not reading from stdin - `cogni chat -u "Hello"`
 // TODO: Test for reading from stdin - `echo "Hello" | cogni chat`
 // TODO: Test for reading from file - `cogni chat -f <file>"
+// TODO: Test stderr shows API error responses

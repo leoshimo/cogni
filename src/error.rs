@@ -14,9 +14,12 @@ pub enum Error {
     #[error("unexpected response - {0}")]
     UnexpectedResponse(String),
 
-    #[error("IO Error - {0}")]
+    #[error("io error - {0}")]
     IO(#[from] std::io::Error),
 
-    #[error("Serialization Error - {0}")]
+    #[error("json serialization error - {0}")]
     JSON(#[from] serde_json::Error),
+
+    #[error("openai api returned error - {}", .error.message)]
+    OpenAIError { error: crate::openai::APIError },
 }

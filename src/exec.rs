@@ -40,6 +40,7 @@ pub async fn exec(inv: Invocation) -> Result<()> {
                 .chat_complete(&request)
                 .await
                 .with_context(|| "failed to fetch request")?;
+
             show_response(io::stdout(), &args, &res)?;
         }
     }
