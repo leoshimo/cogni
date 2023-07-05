@@ -16,6 +16,8 @@ pub struct Client {
     client: reqwest::Client,
     /// Default API Key
     api_key: Option<String>,
+    /// Base URL for API Endpoint
+    base_url: String,
 }
 
 /// Requests for chat_completion
@@ -93,11 +95,15 @@ pub struct Choice {
 }
 
 impl Client {
-    pub fn new(api_key: Option<String>) -> Result<Self, Error> {
+    pub fn new(api_key: Option<String>, base_url: String) -> Result<Self, Error> {
         let client = reqwest::Client::builder()
             .build()
             .map_err(Error::FailedToFetch)?;
-        Ok(Self { client, api_key })
+        Ok(Self {
+            client,
+            api_key,
+            base_url,
+        })
     }
 
     pub async fn chat_complete(
@@ -109,7 +115,7 @@ impl Client {
 
         let resp = self
             .client
-            .post("https://api.openai.com/v1/chat/completions")
+            .post(self.chat_endpoint())
             .bearer_auth(api_key)
             .timeout(request.timeout)
             .header("Content-Type", "application/json")
@@ -136,6 +142,10 @@ impl Client {
                 Err(Error::OpenAIError { error })
             }
         }
+    }
+
+    fn chat_endpoint(&self) -> String {
+        format!("{}{}", self.base_url, "/v1/chat/completions")
     }
 }
 

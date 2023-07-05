@@ -10,7 +10,11 @@ pub fn parse_messages(input: &mut impl Read) -> Result<Vec<Message>, Error> {
     let mut content = String::new();
     input.read_to_string(&mut content).map_err(Error::IO)?;
 
-    Ok(vec![Message::user(&content)])
+    if content.trim().is_empty() {
+        Ok(vec![])
+    } else {
+        Ok(vec![Message::user(&content)])
+    }
 }
 
 #[cfg(test)]
@@ -28,6 +32,13 @@ mod test {
             vec![Message::user("Hello world")],
             "Should have single message for user"
         );
+    }
+
+    #[test]
+    fn parse_empty_input() {
+        let mut data = "".as_bytes();
+        let messages = parse_messages(&mut data).expect("parse_messages should succeed");
+        assert_eq!(messages, vec![], "Should have no messages");
     }
 
     #[test]

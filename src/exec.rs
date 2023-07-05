@@ -2,6 +2,7 @@
 
 use crate::cli::{ChatCompletionArgs, Invocation, OutputFormat};
 use crate::openai::{self, Message};
+use crate::parse;
 use crate::Error;
 use anyhow::{Context, Result};
 
@@ -16,13 +17,17 @@ pub async fn exec(inv: Invocation) -> Result<()> {
     match inv {
         // TODO: Move into chat module?
         ChatCompletion(args) => {
-            let client = openai::Client::new(args.api_key.clone())
+            let base_url = std::env::var("OPENAI_API_ENDPOINT")
+                .unwrap_or("https://api.openai.com".to_string());
+
+            let client = openai::Client::new(args.api_key.clone(), base_url)
                 .with_context(|| "failed to create http client")?;
 
             let file_msgs = read_messages_from_file(&args.file)
                 .with_context(|| format!("failed to open {}", &args.file))?;
 
             let msgs = [args.messages.clone(), file_msgs].concat();
+
             if msgs.is_empty() {
                 return Err(Error::NoMessagesProvided.into());
             }
@@ -64,11 +69,7 @@ fn read_messages_from_file(file: &str) -> Result<Vec<Message>> {
 
     match reader {
         None => Ok(vec![]),
-        Some(mut reader) => {
-            let mut content = String::new();
-            reader.read_to_string(&mut content)?;
-            Ok(vec![Message::user(&content)])
-        }
+        Some(mut r) => Ok(parse::parse_messages(&mut r)?),
     }
 }
 
@@ -116,8 +117,8 @@ mod test {
     use std::time::Duration;
 
     use chrono::DateTime;
+    use predicate::str;
     use predicates::prelude::*;
-    use predicates::str;
 
     use crate::{
         cli::{ChatCompletionArgs, ChatCompletionArgsBuilder, OutputFormat},
