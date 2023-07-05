@@ -12,6 +12,8 @@ keywords = ["unix", "cli", "command-line", "ai", "gpt"]
 
 [dependencies]
 anyhow = "1.0.71"
+assert_cmd = "2.0.11"
+assert_fs = "1.0.13"
 chrono = { version = "0.4.26", features = ["serde"] }
 clap = { version = "4.3.5", features = ["default", "cargo", "env"] }
 derive_builder = "0.12.0"

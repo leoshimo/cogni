@@ -83,7 +83,7 @@ fn show_response(
         1 => &resp.choices[0],
         _ => {
             return Err(Error::UnexpectedResponse(format!(
-                "More then 1 choice in response: {:?}",
+                "Unexpected number of choices in response: {:?}",
                 resp
             )))
         }
