@@ -6,7 +6,7 @@ edition = "2021"
 description = "Unix native interface for LLMs"
 repository = "https://github.com/leoshimo/cogni"
 license = "MIT OR Apache-2.0"
-keywords = ["unix", "cli", "command-line", "ai", "gpt"]
+keywords = ["unix", "cli", "command-line", "ai", "llm"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
