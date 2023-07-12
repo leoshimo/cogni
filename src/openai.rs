@@ -81,10 +81,11 @@ pub struct Usage {
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
-#[serde(rename_all = "lowercase")]
+#[serde(rename_all = "snake_case")]
 pub enum FinishReason {
     Stop,
     Length,
+    FunctionCall,
     ContentFilter,
 }
 
