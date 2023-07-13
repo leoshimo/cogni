@@ -1,5 +1,7 @@
 # cogni
 
+[![Rust](https://github.com/leoshimo/cogni/actions/workflows/rust.yml/badge.svg)](https://github.com/leoshimo/cogni/actions/workflows/rust.yml)
+
 Unix native interface for LLMs optimized for happiness.
 
 ## Focus
@@ -21,7 +23,7 @@ tools without bespoke integrations.
 - Ad-hoc Language Model Scripting
 - 🚧 Repeatable Scripts via Templates
 - Flexible input and output formats (Text, JSON, NDJSON)
-- Standalone binary
+- Standalone binary - No Python required
 - 🚧 Multi-Step Prompting
 - 🚧 Tool Augmentation
 - 🚧 Output Constraints (in set, in type)
@@ -29,14 +31,16 @@ tools without bespoke integrations.
 
 ## Non-Features
 
-- Interactive use - instead, invoke `cogni` from within interactive environments (script, emacs, etc) 
-- Python
+- Interactive use - instead, invoke `cogni` from within interactive environments (REPLs, emacs, etc) 
 
 ## Installation
 
 ```sh
 # Install from crates.io
 $ cargo install cogni
+
+# From source
+$ cargo install --path .
 ```
 
 ---
