@@ -34,7 +34,6 @@ pub struct ChatCompletionRequest {
 /// Reference: <https://platform.openai.com/docs/api-reference/chat>
 #[derive(Builder, Default, Debug, Serialize, Deserialize)]
 pub struct ChatCompletion {
-    pub id: String,
     #[serde(with = "ts_seconds")]
     pub created: DateTime<Utc>,
     pub choices: Vec<Choice>,
