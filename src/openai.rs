@@ -192,7 +192,6 @@ mod test {
     #[test]
     fn parse_chat_completion_response() -> Result<()> {
         let data = r#"{
-             "id": "chatcmpl-XXXXX",
              "created": 1688413145,
              "model": "gpt-3.5-turbo-0613",
              "choices": [{
@@ -213,7 +212,6 @@ mod test {
 
         let resp = serde_json::from_str::<ChatCompletion>(data)?;
 
-        assert_eq!(resp.id, "chatcmpl-XXXXX");
         assert_eq!(resp.created, Utc.timestamp_opt(1688413145, 0).unwrap());
         assert_eq!(
             resp.choices,

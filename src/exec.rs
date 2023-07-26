@@ -210,7 +210,6 @@ mod test {
 
     fn default_resp() -> ChatCompletionBuilder {
         ChatCompletion::builder()
-            .id(String::default())
             .created(DateTime::default())
             .choices(vec![])
             .model(String::default())
