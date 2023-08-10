@@ -1,9 +1,9 @@
 //! Integration tests for chat subcommand
 
 use assert_cmd::Command;
+use assert_fs::prelude::*;
 use predicates::prelude::*;
 use serde_json::json;
-use assert_fs::prelude::*;
 
 #[test]
 fn no_args() {
@@ -22,6 +22,18 @@ fn chat_no_message() {
         .assert()
         .failure()
         .stderr(predicate::str::contains("no messages provided"));
+}
+
+#[test]
+fn chat_no_file() {
+    Command::cargo_bin("cogni")
+        .unwrap()
+        .args(["chat", "file_does_not_exist"])
+        .assert()
+        .failure()
+        .stderr(predicate::str::contains(
+            "failed to open file_does_not_exist",
+        ));
 }
 
 #[test]
@@ -213,22 +225,20 @@ fn chat_api_error() {
             "temperature": 1000.0 // invalid param
         })))
         .with_body(
-             r#"{
+            r#"{
                "error": {
                  "message": "1000 is greater than the maximum of 2 - 'temperature'",
                  "type": "invalid_request_error",
                  "param": null,
                  "code": null
                }
-             }"# ,
+             }"#,
         )
         .create();
 
     let cmd = Command::cargo_bin("cogni")
         .unwrap()
-        .args([
-            "chat", "-u", "USER", "-t", "1000"
-        ])
+        .args(["chat", "-u", "USER", "-t", "1000"])
         .write_stdin("USER_STDIN")
         .env("OPENAI_API_ENDPOINT", server.url())
         .env("OPENAI_API_KEY", "ABCDE")
@@ -236,8 +246,9 @@ fn chat_api_error() {
 
     mock.assert();
 
-    cmd.failure()
-        .stderr(predicate::str::contains("1000 is greater than the maximum of 2"));
+    cmd.failure().stderr(predicate::str::contains(
+        "1000 is greater than the maximum of 2",
+    ));
 }
 
 /// Test messages from file
@@ -282,9 +293,7 @@ fn chat_user_message_from_file() {
 
     let cmd = Command::cargo_bin("cogni")
         .unwrap()
-        .args([
-            "chat", infile.path().to_str().unwrap()
-        ])
+        .args(["chat", infile.path().to_str().unwrap()])
         .env("OPENAI_API_ENDPOINT", server.url())
         .env("OPENAI_API_KEY", "ABCDE")
         .assert();
@@ -294,4 +303,3 @@ fn chat_user_message_from_file() {
     cmd.success()
         .stdout(predicate::str::contains("ASSISTANT REPLY"));
 }
-
