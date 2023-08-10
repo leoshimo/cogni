@@ -1,12 +1,11 @@
 //! Executor for cogni
 
 use crate::cli::{ChatCompletionArgs, Invocation, OutputFormat};
-use crate::openai::{self, Message};
+use crate::openai::{self, ChatCompletion, FinishReason, Message};
 use crate::parse;
 use crate::Error;
 use anyhow::{Context, Result};
 
-use openai::{ChatCompletion, FinishReason};
 use std::fs::File;
 use std::io::{self, BufWriter, IsTerminal, Read, Write};
 
