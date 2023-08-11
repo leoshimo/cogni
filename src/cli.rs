@@ -72,7 +72,7 @@ fn cli() -> Command {
 
 /// Subcommand for chat completion CLI interface
 fn chat_completion_cmd() -> Command {
-    let mut cmd = Command::new("chat")
+    let cmd = Command::new("chat")
         .about("Run Ad-Hoc Chat Completions")
         .arg(
             arg_openai_api_key()
@@ -101,7 +101,7 @@ fn chat_completion_cmd() -> Command {
 
 /// Subcommand for template exec CLI interface
 fn run_template_cmd() -> Command {
-    let mut cmd = Command::new("run")
+    let cmd = Command::new("run")
         .about("Run Chat Completion Templates")
         .arg(
             arg_openai_api_key()

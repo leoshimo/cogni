@@ -22,4 +22,7 @@ pub enum Error {
 
     #[error("openai api returned error - {}", .error.message)]
     OpenAIError { error: crate::openai::APIError },
+
+    #[error("failed to deserialize toml template - {0}")]
+    FailedToDeserializeTemplate(#[from] toml::de::Error),
 }
