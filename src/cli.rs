@@ -62,6 +62,28 @@ pub fn parse() -> Invocation {
     cli().get_matches().into()
 }
 
+// TODO: Rethink the CLI organization
+//
+// Thought: The flag-based interface for `chat` and template-based `run` are all ways to incrementally build a set of messages (and set options).
+//
+// Perhaps it can all be under `cogni`:
+//   $ cat file_with_messages_to_append | cogni -s "system prompt" -u "user message" a_template_with_messages -u "another user message"
+//
+// where a_template_with_message can be a:
+// - File with strings
+// - TOML file with messages + options
+// - NDJSON file with set of messages
+//
+// and where file_with_messages can be:
+// - A single line string (to easily supply a user message from stdin
+// - A multiline NDJSON with several messages
+// - A toml file
+//
+// I.e. Chat messages are incrementally built up. Config options are overridden by later ones
+// Key components:
+// - for files (and stdin), auto-detect format (single user message, TOML messages, NDJSON, annotated plaintext)
+// - the state accumulates to build the request - messages accumulate, configuration acumulates (and are overwritten)
+
 /// Top-level command
 fn cli() -> Command {
     command!()
