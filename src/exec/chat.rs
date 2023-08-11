@@ -5,14 +5,14 @@ use crate::openai::{self, ChatCompletion, FinishReason, Message};
 use crate::parse;
 use crate::Error;
 
-use std::io::{self, Read, Write, BufWriter, IsTerminal};
+use anyhow::{Context, Result};
 use std::fs::File;
-use anyhow::{Result, Context};
+use std::io::{self, BufWriter, IsTerminal, Read, Write};
 
 /// Executes `Invocation::ChatCompletion` via given args
 pub async fn exec(args: ChatCompletionArgs) -> Result<()> {
-    let base_url = std::env::var("OPENAI_API_ENDPOINT")
-        .unwrap_or("https://api.openai.com".to_string());
+    let base_url =
+        std::env::var("OPENAI_API_ENDPOINT").unwrap_or("https://api.openai.com".to_string());
 
     let client = openai::Client::new(args.api_key.clone(), base_url)
         .with_context(|| "failed to create http client")?;
@@ -43,7 +43,6 @@ pub async fn exec(args: ChatCompletionArgs) -> Result<()> {
     show_response(io::stdout(), &args, &res)?;
     Ok(())
 }
-
 
 /// Read messages from non-tty stdin or file specified by `args.file`
 fn read_messages_from_file(file: &str) -> Result<Vec<Message>> {

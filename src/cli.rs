@@ -4,7 +4,8 @@ use std::time::Duration;
 
 use crate::openai::Message;
 use clap::{
-    arg, builder::PossibleValue, command, value_parser, ArgGroup, ArgMatches, Command, ValueEnum,
+    arg, builder::PossibleValue, command, value_parser, Arg, ArgGroup, ArgMatches, Command,
+    ValueEnum,
 };
 use derive_builder::Builder;
 
@@ -13,18 +14,37 @@ use derive_builder::Builder;
 pub enum Invocation {
     /// Invoke chat completion,
     ChatCompletion(ChatCompletionArgs),
+
+    /// Invoke template run
+    RunTemplate(RunTemplateArgs),
 }
 
 /// Arguments parsed for ChatCompletion
 #[derive(Debug, Default, Builder)]
 pub struct ChatCompletionArgs {
-    pub api_key: Option<String>,
+    /// Messages composing chat completion request (prepended)
     pub messages: Vec<Message>,
+    /// File to source additional messages to append to `messages`
+    pub file: String,
+    /// The format that response is output in
+    pub output_format: OutputFormat,
+    /// API Key to use
+    pub api_key: Option<String>,
+
     pub model: String,
     pub temperature: f32,
-    pub output_format: OutputFormat,
-    pub file: String,
     pub timeout: Duration,
+}
+
+/// Arguments parsed for RunTemplate
+#[derive(Debug, Default, Builder)]
+pub struct RunTemplateArgs {
+    /// Spec
+    pub template_spec: String,
+    /// The format that response is output in
+    pub output_format: OutputFormat,
+    /// API Key to use
+    pub api_key: Option<String>,
 }
 
 /// The format that invocation's results are in
@@ -46,13 +66,17 @@ pub fn parse() -> Invocation {
 fn cli() -> Command {
     command!()
         .subcommand(chat_completion_cmd())
+        .subcommand(run_template_cmd())
         .subcommand_required(true)
 }
 
-/// Subcommand for chat completion interface
+/// Subcommand for chat completion CLI interface
 fn chat_completion_cmd() -> Command {
-    Command::new("chat")
-        .about("Chat Completion")
+    let mut cmd = Command::new("chat")
+        .about("Run Ad-Hoc Chat Completions")
+        .arg(
+            arg_openai_api_key()
+        )
         .arg(arg!(model: -m --model <MODEL> "Sets model").default_value("gpt-3.5-turbo"))
         .arg(
             arg!(temperature: -t --temperature <TEMP> "Sets temperature")
@@ -62,7 +86,7 @@ fn chat_completion_cmd() -> Command {
         .arg(
             arg!(timeout: -T --timeout <DURATION> "Sets timeout duration in seconds")
                 .value_parser(value_parser!(u64))
-                .default_value("10")
+                .default_value("30")
         )
         .arg(arg!(system_message: -s --system <MSG> "Sets system prompt").required(false))
         .arg(
@@ -70,25 +94,50 @@ fn chat_completion_cmd() -> Command {
                 .required(false),
         )
         .arg(arg!(user_messages: -u --user <MSG> ... "Appends user message").required(false))
+        .arg(arg!(file: [FILE] "File providing messages to append to chat log. If \"-\", reads from non-tty stdin").default_value("-"));
+
+    add_args_output_format(cmd)
+}
+
+/// Subcommand for template exec CLI interface
+fn run_template_cmd() -> Command {
+    let mut cmd = Command::new("run")
+        .about("Run Chat Completion Templates")
         .arg(
-            arg!(api_key: --apikey <API_KEY> "Sets API Key to use")
-                .env("OPENAI_API_KEY")
-                .hide_env_values(true),
+            arg_openai_api_key()
         )
         .arg(
-            arg!(output_format: --output_format <FORMAT> "Sets output format")
-                .value_parser(value_parser!(OutputFormat))
-                .conflicts_with("output_format_short")
-                .default_value_ifs([
-                    ("json", "true", Some("json")),
-                    ("jsonp", "true", Some("jsonpretty")),
-                ])
-                .default_value("plaintext"),
-        )
-        .arg(arg!(--json "Shorthand for --output_format json"))
-        .arg(arg!(--jsonp "Shorthand for --output_format jsonpretty"))
-        .group(ArgGroup::new("output_format_short").args(["json", "jsonp"]))
-        .arg(arg!(file: [FILE] "File providing messages to append to chat log. If \"-\", reads from non-tty stdin").default_value("-"))
+            arg!(template_spec: [TEMPLATE_SPEC]
+                 "Specifier for template to execute. \
+                  Supports template commands in configuration directory and absolute paths to templates.\
+                  If \"-\" and stdin is non-tty, uses stdin").default_value("-")
+        );
+
+    add_args_output_format(cmd)
+}
+
+/// Arg for OpenAI API Key CLI argument
+fn arg_openai_api_key() -> Arg {
+    arg!(api_key: --apikey <API_KEY> "Sets API Key to use. Overrides OPENAI_API_KEY")
+        .env("OPENAI_API_KEY")
+        .hide_env_values(true)
+}
+
+/// Adds common output_format flags
+fn add_args_output_format(cmd: Command) -> Command {
+    cmd.arg(
+        arg!(output_format: --output_format <FORMAT> "Sets output format")
+            .value_parser(value_parser!(OutputFormat))
+            .conflicts_with("output_format_short")
+            .default_value_ifs([
+                ("json", "true", Some("json")),
+                ("jsonp", "true", Some("jsonpretty")),
+            ])
+            .default_value("plaintext"),
+    )
+    .arg(arg!(--json "Shorthand for --output_format json"))
+    .arg(arg!(--jsonp "Shorthand for --output_format jsonpretty"))
+    .group(ArgGroup::new("output_format_short").args(["json", "jsonp"]))
 }
 
 impl From<ArgMatches> for Invocation {
@@ -99,10 +148,47 @@ impl From<ArgMatches> for Invocation {
 
         match name {
             "chat" => ChatCompletion(ChatCompletionArgs::from(submatch.to_owned())),
+            "run" => RunTemplate(RunTemplateArgs::from(submatch.to_owned())),
             _ => {
                 panic!("Unrecognized subcommand");
             }
         }
+    }
+}
+
+impl ChatCompletionArgs {
+    /// Builder
+    pub fn builder() -> ChatCompletionArgsBuilder {
+        ChatCompletionArgsBuilder::default()
+    }
+
+    /// Given `clap::ArgMatches`, creates a vector of `Message` with assigned roles and ordering
+    fn messages_from_matches(matches: &ArgMatches) -> Vec<Message> {
+        let mut messages = vec![];
+
+        if let Some(user_msgs) = matches.get_many::<String>("user_messages") {
+            messages.extend(
+                user_msgs
+                    .map(|c| Message::user(c))
+                    .zip(matches.indices_of("user_messages").unwrap()),
+            );
+        }
+        if let Some(asst_msgs) = matches.get_many::<String>("assistant_messages") {
+            messages.extend(
+                asst_msgs
+                    .map(|c| Message::assistant(c))
+                    .zip(matches.indices_of("assistant_messages").unwrap()),
+            );
+        }
+        messages.sort_by(|(_a, a_idx), (_b, b_idx)| a_idx.cmp(b_idx));
+        let mut messages = messages.into_iter().map(|(a, _)| a).collect::<Vec<_>>();
+
+        // System message is always first
+        if let Some(system_msg) = matches.get_one::<String>("system_message") {
+            messages.insert(0, Message::system(system_msg));
+        }
+
+        messages
     }
 }
 
@@ -145,39 +231,21 @@ impl From<ArgMatches> for ChatCompletionArgs {
     }
 }
 
-impl ChatCompletionArgs {
-    /// Builder
-    pub fn builder() -> ChatCompletionArgsBuilder {
-        ChatCompletionArgsBuilder::default()
-    }
-
-    /// Given `clap::ArgMatches`, creates a vector of `Message` with assigned roles and ordering
-    fn messages_from_matches(matches: &ArgMatches) -> Vec<Message> {
-        let mut messages = vec![];
-
-        if let Some(user_msgs) = matches.get_many::<String>("user_messages") {
-            messages.extend(
-                user_msgs
-                    .map(|c| Message::user(c))
-                    .zip(matches.indices_of("user_messages").unwrap()),
-            );
+impl From<ArgMatches> for RunTemplateArgs {
+    fn from(matches: ArgMatches) -> Self {
+        let api_key = matches.get_one::<String>("api_key").cloned();
+        let output_format = *matches
+            .get_one::<OutputFormat>("output_format")
+            .expect("Output format is required");
+        let template_spec = matches
+            .get_one::<String>("template_spec")
+            .expect("template_spec is required")
+            .to_string();
+        Self {
+            template_spec,
+            api_key,
+            output_format,
         }
-        if let Some(asst_msgs) = matches.get_many::<String>("assistant_messages") {
-            messages.extend(
-                asst_msgs
-                    .map(|c| Message::assistant(c))
-                    .zip(matches.indices_of("assistant_messages").unwrap()),
-            );
-        }
-        messages.sort_by(|(_a, a_idx), (_b, b_idx)| a_idx.cmp(b_idx));
-        let mut messages = messages.into_iter().map(|(a, _)| a).collect::<Vec<_>>();
-
-        // System message is always first
-        if let Some(system_msg) = matches.get_one::<String>("system_message") {
-            messages.insert(0, Message::system(system_msg));
-        }
-
-        messages
     }
 }
 
@@ -203,7 +271,7 @@ mod test {
     type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
     #[test]
-    fn chat_no_args_is_err() {
+    fn no_subcmd_is_err() {
         let res = cli()
             .try_get_matches_from(vec!["cogni"])
             .map(Invocation::from);
@@ -215,7 +283,10 @@ mod test {
         let res = cli()
             .try_get_matches_from(vec!["cogni", "chat", "-u", "USER"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
+        let args = match res {
+            ChatCompletion(args) => args,
+            _ => return Err(format!("Unexpected invocation parsed - {:?}", res).into()),
+        };
 
         assert_eq!(args.messages, vec![Message::user("USER")]);
         Ok(())
@@ -228,7 +299,10 @@ mod test {
                 "cogni", "chat", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
             ])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
+        let args = match res {
+            ChatCompletion(args) => args,
+            _ => return Err(format!("Unexpected invocation parsed - {:?}", res).into()),
+        };
 
         assert_eq!(
             args.messages,
@@ -249,7 +323,10 @@ mod test {
                 "cogni", "chat", "-s", "SYSTEM", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
             ])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
+        let args = match res {
+            ChatCompletion(args) => args,
+            _ => return Err(format!("Unexpected invocation parsed - {:?}", res).into()),
+        };
 
         assert_eq!(
             args.messages,
@@ -271,7 +348,10 @@ mod test {
                 "cogni", "chat", "-s", "SYSTEM", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
             ])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
+        let args = match res {
+            ChatCompletion(args) => args,
+            _ => return Err(format!("Unexpected invocation parsed - {:?}", res).into()),
+        };
 
         assert_eq!(
             args.messages,
@@ -291,7 +371,10 @@ mod test {
         let res = cli()
             .try_get_matches_from(vec!["cogni", "chat", "-u", "ABC"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
+        let args = match res {
+            ChatCompletion(args) => args,
+            _ => return Err(format!("Unexpected invocation parsed - {:?}", res).into()),
+        };
 
         assert_eq!(
             args.output_format,
@@ -313,7 +396,10 @@ mod test {
                 "json",
             ])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
+        let args = match res {
+            ChatCompletion(args) => args,
+            _ => return Err(format!("Unexpected invocation parsed - {:?}", res).into()),
+        };
 
         assert_eq!(args.output_format, OutputFormat::JSON);
         Ok(())
@@ -324,7 +410,10 @@ mod test {
         let res = cli()
             .try_get_matches_from(vec!["cogni", "chat", "-u", "ABC", "--json"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
+        let args = match res {
+            ChatCompletion(args) => args,
+            _ => return Err(format!("Unexpected invocation parsed - {:?}", res).into()),
+        };
 
         assert_eq!(args.output_format, OutputFormat::JSON);
         Ok(())
@@ -335,7 +424,10 @@ mod test {
         let res = cli()
             .try_get_matches_from(vec!["cogni", "chat", "-u", "ABC", "--jsonp"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
+        let args = match res {
+            ChatCompletion(args) => args,
+            _ => return Err(format!("Unexpected invocation parsed - {:?}", res).into()),
+        };
 
         assert_eq!(args.output_format, OutputFormat::JSONPretty);
         Ok(())
@@ -346,7 +438,10 @@ mod test {
         let res = cli()
             .try_get_matches_from(vec!["cogni", "chat"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
+        let args = match res {
+            ChatCompletion(args) => args,
+            _ => return Err(format!("Unexpected invocation parsed - {:?}", res).into()),
+        };
 
         assert_eq!(args.file, "-");
         Ok(())
@@ -357,9 +452,42 @@ mod test {
         let res = cli()
             .try_get_matches_from(vec!["cogni", "chat", "dialog_log"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
+        let args = match res {
+            ChatCompletion(args) => args,
+            _ => return Err(format!("Unexpected invocation parsed - {:?}", res).into()),
+        };
 
         assert_eq!(args.file, "dialog_log");
+        Ok(())
+    }
+
+    #[test]
+    fn run_no_template_spec() -> Result<()> {
+        let res = cli()
+            .try_get_matches_from(vec!["cogni", "run"])
+            .map(Invocation::from)?;
+
+        let args = match res {
+            Invocation::RunTemplate(args) => args,
+            _ => return Err(format!("Unexpected invocation: {:?}", res).into()),
+        };
+
+        assert_eq!(args.template_spec, "-");
+        Ok(())
+    }
+
+    #[test]
+    fn run_with_template_spec() -> Result<()> {
+        let res = cli()
+            .try_get_matches_from(vec!["cogni", "run", "my_cmd"])
+            .map(Invocation::from)?;
+
+        let args = match res {
+            Invocation::RunTemplate(args) => args,
+            _ => return Err(format!("Unexpected invocation: {:?}", res).into()),
+        };
+
+        assert_eq!(args.template_spec, "my_cmd");
         Ok(())
     }
 }
