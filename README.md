@@ -43,6 +43,16 @@ $ cargo install cogni
 $ cargo install --path .
 ```
 
+## Setup
+
+`cogni` expects an OpenAI API Key to be supplied via `--apikey` option or more
+conveniently `OPENAI_API_KEY` environment variable:
+
+```sh
+# in shell configuration
+export OPENAI_API_KEY=sk-DEADBEEF
+```
+
 ---
 
 ## Tour of cogni
