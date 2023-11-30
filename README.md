@@ -2,7 +2,7 @@
 
 [![Rust](https://github.com/leoshimo/cogni/actions/workflows/rust.yml/badge.svg)](https://github.com/leoshimo/cogni/actions/workflows/rust.yml)
 
-Unix native interface for LLMs optimized for happiness.
+Unix-minded interface for interacting with LLMs.
 
 ## Focus
 
@@ -21,13 +21,10 @@ tools without bespoke integrations.
 
 - Unix-minded Design (IO redirection, composability, interop)
 - Ad-hoc Language Model Scripting
-- 🚧 Repeatable Scripts via Templates
 - Flexible input and output formats (Text, JSON, NDJSON)
 - Standalone binary - No Python required
-- 🚧 Multi-Step Prompting
-- 🚧 Tool Augmentation
-- 🚧 Output Constraints (in set, in type)
-- 🚧 Provided integration with external tools (Emacs, Raycast)
+- 🚧 Repeatable Scripts via Templates
+- 🚧 Integration with external tools (Emacs, Raycast)
 
 ## Non-Features
 
