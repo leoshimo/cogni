@@ -38,7 +38,7 @@ pub fn parse() -> Invocation {
 /// Top-level command
 fn cli() -> Command {
     command!()
-        .arg(arg!(model: -m --model <MODEL> "Sets model").default_value("gpt-3.5-turbo"))
+        .arg(arg!(model: -m --model <MODEL> "Sets model. See https://platform.openai.com/docs/models for model identifiers.").default_value("gpt-4-1106-preview"))
         .arg(
             arg!(temperature: -t --temperature <TEMP> "Sets temperature")
                 .value_parser(value_parser!(f32))
