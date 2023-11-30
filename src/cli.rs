@@ -9,15 +9,8 @@ use clap::{
 use derive_builder::Builder;
 
 /// CLI invocations that can be launched
-#[derive(Debug)]
-pub enum Invocation {
-    /// Invoke chat completion,
-    ChatCompletion(ChatCompletionArgs),
-}
-
-/// Arguments parsed for ChatCompletion
 #[derive(Debug, Default, Builder)]
-pub struct ChatCompletionArgs {
+pub struct Invocation {
     pub api_key: Option<String>,
     pub messages: Vec<Message>,
     pub model: String,
@@ -36,7 +29,7 @@ pub enum OutputFormat {
     JSONPretty,
 }
 
-/// Parse commandline arguments into `ChatCompletionArgs`. May exit with help or error message
+/// Parse commandline arguments into `Invocation`. May exit with help or error message
 #[must_use]
 pub fn parse() -> Invocation {
     cli().get_matches().into()
@@ -45,14 +38,6 @@ pub fn parse() -> Invocation {
 /// Top-level command
 fn cli() -> Command {
     command!()
-        .subcommand(chat_completion_cmd())
-        .subcommand_required(true)
-}
-
-/// Subcommand for chat completion interface
-fn chat_completion_cmd() -> Command {
-    Command::new("chat")
-        .about("Chat Completion")
         .arg(arg!(model: -m --model <MODEL> "Sets model").default_value("gpt-3.5-turbo"))
         .arg(
             arg!(temperature: -t --temperature <TEMP> "Sets temperature")
@@ -93,23 +78,8 @@ fn chat_completion_cmd() -> Command {
 
 impl From<ArgMatches> for Invocation {
     fn from(matches: ArgMatches) -> Self {
-        use Invocation::*;
-
-        let (name, submatch) = matches.subcommand().expect("Subcommands are required");
-
-        match name {
-            "chat" => ChatCompletion(ChatCompletionArgs::from(submatch.to_owned())),
-            _ => {
-                panic!("Unrecognized subcommand");
-            }
-        }
-    }
-}
-
-impl From<ArgMatches> for ChatCompletionArgs {
-    fn from(matches: ArgMatches) -> Self {
         let api_key = matches.get_one::<String>("api_key").cloned();
-        let messages = ChatCompletionArgs::messages_from_matches(&matches);
+        let messages = Invocation::messages_from_matches(&matches);
         let model = matches
             .get_one::<String>("model")
             .expect("Models is required")
@@ -145,10 +115,10 @@ impl From<ArgMatches> for ChatCompletionArgs {
     }
 }
 
-impl ChatCompletionArgs {
+impl Invocation {
     /// Builder
-    pub fn builder() -> ChatCompletionArgsBuilder {
-        ChatCompletionArgsBuilder::default()
+    pub fn builder() -> InvocationBuilder {
+        InvocationBuilder::default()
     }
 
     /// Given `clap::ArgMatches`, creates a vector of `Message` with assigned roles and ordering
@@ -197,25 +167,15 @@ impl ValueEnum for OutputFormat {
 
 #[cfg(test)]
 mod test {
-    use super::Invocation::*;
     use super::*;
 
     type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
     #[test]
-    fn chat_no_args_is_err() {
-        let res = cli()
-            .try_get_matches_from(vec!["cogni"])
-            .map(Invocation::from);
-        assert!(res.is_err());
-    }
-
-    #[test]
     fn chat_one_msgs() -> Result<()> {
-        let res = cli()
-            .try_get_matches_from(vec!["cogni", "chat", "-u", "USER"])
+        let args = cli()
+            .try_get_matches_from(vec!["cogni", "-u", "USER"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
 
         assert_eq!(args.messages, vec![Message::user("USER")]);
         Ok(())
@@ -223,12 +183,9 @@ mod test {
 
     #[test]
     fn chat_many_msgs() -> Result<()> {
-        let res = cli()
-            .try_get_matches_from(vec![
-                "cogni", "chat", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
-            ])
+        let args = cli()
+            .try_get_matches_from(vec!["cogni", "-u", "USER1", "-a", "ROBOT", "-u", "USER2"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
 
         assert_eq!(
             args.messages,
@@ -244,12 +201,11 @@ mod test {
 
     #[test]
     fn chat_many_msgs_with_system_prompt() -> Result<()> {
-        let res = cli()
+        let args = cli()
             .try_get_matches_from(vec![
-                "cogni", "chat", "-s", "SYSTEM", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
+                "cogni", "-s", "SYSTEM", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
             ])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
 
         assert_eq!(
             args.messages,
@@ -266,12 +222,11 @@ mod test {
 
     #[test]
     fn chat_many_msgs_with_system_prompt_last() -> Result<()> {
-        let res = cli()
+        let args = cli()
             .try_get_matches_from(vec![
-                "cogni", "chat", "-s", "SYSTEM", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
+                "cogni", "-s", "SYSTEM", "-u", "USER1", "-a", "ROBOT", "-u", "USER2",
             ])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
 
         assert_eq!(
             args.messages,
@@ -288,10 +243,9 @@ mod test {
 
     #[test]
     fn chat_output_format_default() -> Result<()> {
-        let res = cli()
-            .try_get_matches_from(vec!["cogni", "chat", "-u", "ABC"])
+        let args = cli()
+            .try_get_matches_from(vec!["cogni", "-u", "ABC"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
 
         assert_eq!(
             args.output_format,
@@ -303,17 +257,9 @@ mod test {
 
     #[test]
     fn chat_output_format_explicit_json() -> Result<()> {
-        let res = cli()
-            .try_get_matches_from(vec![
-                "cogni",
-                "chat",
-                "-u",
-                "ABC",
-                "--output_format",
-                "json",
-            ])
+        let args = cli()
+            .try_get_matches_from(vec!["cogni", "-u", "ABC", "--output_format", "json"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
 
         assert_eq!(args.output_format, OutputFormat::JSON);
         Ok(())
@@ -321,10 +267,9 @@ mod test {
 
     #[test]
     fn chat_output_format_shorthand_json() -> Result<()> {
-        let res = cli()
-            .try_get_matches_from(vec!["cogni", "chat", "-u", "ABC", "--json"])
+        let args = cli()
+            .try_get_matches_from(vec!["cogni", "-u", "ABC", "--json"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
 
         assert_eq!(args.output_format, OutputFormat::JSON);
         Ok(())
@@ -332,10 +277,9 @@ mod test {
 
     #[test]
     fn chat_output_format_shorthand_jsonp() -> Result<()> {
-        let res = cli()
-            .try_get_matches_from(vec!["cogni", "chat", "-u", "ABC", "--jsonp"])
+        let args = cli()
+            .try_get_matches_from(vec!["cogni", "-u", "ABC", "--jsonp"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
 
         assert_eq!(args.output_format, OutputFormat::JSONPretty);
         Ok(())
@@ -343,10 +287,9 @@ mod test {
 
     #[test]
     fn chat_file_default() -> Result<()> {
-        let res = cli()
-            .try_get_matches_from(vec!["cogni", "chat"])
+        let args = cli()
+            .try_get_matches_from(vec!["cogni"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
 
         assert_eq!(args.file, "-");
         Ok(())
@@ -354,10 +297,9 @@ mod test {
 
     #[test]
     fn chat_file_positional() -> Result<()> {
-        let res = cli()
-            .try_get_matches_from(vec!["cogni", "chat", "dialog_log"])
+        let args = cli()
+            .try_get_matches_from(vec!["cogni", "dialog_log"])
             .map(Invocation::from)?;
-        let ChatCompletion(args) = res;
 
         assert_eq!(args.file, "dialog_log");
         Ok(())

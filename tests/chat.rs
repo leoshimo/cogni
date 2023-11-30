@@ -6,19 +6,9 @@ use predicates::prelude::*;
 use serde_json::json;
 
 #[test]
-fn no_args() {
-    Command::cargo_bin("cogni")
-        .unwrap()
-        .assert()
-        .failure()
-        .stderr(predicate::str::contains("Usage"));
-}
-
-#[test]
 fn chat_no_message() {
     Command::cargo_bin("cogni")
         .unwrap()
-        .args(["chat"])
         .assert()
         .failure()
         .stderr(predicate::str::contains("no messages provided"));
@@ -28,7 +18,7 @@ fn chat_no_message() {
 fn chat_no_file() {
     Command::cargo_bin("cogni")
         .unwrap()
-        .args(["chat", "file_does_not_exist"])
+        .args(["file_does_not_exist"])
         .assert()
         .failure()
         .stderr(predicate::str::contains(
@@ -74,7 +64,7 @@ fn chat_user_message_from_flag() {
 
     let cmd = Command::cargo_bin("cogni")
         .unwrap()
-        .args(["chat", "-u", "Hello"])
+        .args(["-u", "Hello"])
         .env("OPENAI_API_ENDPOINT", server.url())
         .env("OPENAI_API_KEY", "ABCDE")
         .assert();
@@ -123,7 +113,6 @@ fn chat_user_message_from_stdin() {
 
     let cmd = Command::cargo_bin("cogni")
         .unwrap()
-        .args(["chat"])
         .write_stdin("Hello")
         .env("OPENAI_API_ENDPOINT", server.url())
         .env("OPENAI_API_KEY", "ABCDE")
@@ -194,7 +183,7 @@ fn chat_multiple_messages() {
     let cmd = Command::cargo_bin("cogni")
         .unwrap()
         .args([
-            "chat", "-s", "SYSTEM", "-u", "USER_1", "-a", "ASSI_1", "-u", "USER_2", "-a", "ASSI_2",
+            "-s", "SYSTEM", "-u", "USER_1", "-a", "ASSI_1", "-u", "USER_2", "-a", "ASSI_2",
         ])
         .write_stdin("USER_STDIN")
         .env("OPENAI_API_ENDPOINT", server.url())
@@ -238,7 +227,7 @@ fn chat_api_error() {
 
     let cmd = Command::cargo_bin("cogni")
         .unwrap()
-        .args(["chat", "-u", "USER", "-t", "1000"])
+        .args(["-u", "USER", "-t", "1000"])
         .write_stdin("USER_STDIN")
         .env("OPENAI_API_ENDPOINT", server.url())
         .env("OPENAI_API_KEY", "ABCDE")
@@ -293,7 +282,7 @@ fn chat_user_message_from_file() {
 
     let cmd = Command::cargo_bin("cogni")
         .unwrap()
-        .args(["chat", infile.path().to_str().unwrap()])
+        .args([infile.path().to_str().unwrap()])
         .env("OPENAI_API_ENDPOINT", server.url())
         .env("OPENAI_API_KEY", "ABCDE")
         .assert();

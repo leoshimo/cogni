@@ -1,18 +1,18 @@
 //! Implements chat subcommand
 
-use crate::cli::{ChatCompletionArgs, OutputFormat};
+use crate::cli::{Invocation, OutputFormat};
 use crate::openai::{self, ChatCompletion, FinishReason, Message};
 use crate::parse;
 use crate::Error;
 
-use std::io::{self, Read, Write, BufWriter, IsTerminal};
+use anyhow::{Context, Result};
 use std::fs::File;
-use anyhow::{Result, Context};
+use std::io::{self, BufWriter, IsTerminal, Read, Write};
 
-/// Executes `Invocation::ChatCompletion` via given args
-pub async fn exec(args: ChatCompletionArgs) -> Result<()> {
-    let base_url = std::env::var("OPENAI_API_ENDPOINT")
-        .unwrap_or("https://api.openai.com".to_string());
+/// Executes `Invocation` via given args
+pub async fn exec(args: Invocation) -> Result<()> {
+    let base_url =
+        std::env::var("OPENAI_API_ENDPOINT").unwrap_or("https://api.openai.com".to_string());
 
     let client = openai::Client::new(args.api_key.clone(), base_url)
         .with_context(|| "failed to create http client")?;
@@ -44,7 +44,6 @@ pub async fn exec(args: ChatCompletionArgs) -> Result<()> {
     Ok(())
 }
 
-
 /// Read messages from non-tty stdin or file specified by `args.file`
 fn read_messages_from_file(file: &str) -> Result<Vec<Message>> {
     let reader: Option<Box<dyn Read>> = match file {
@@ -66,11 +65,7 @@ fn read_messages_from_file(file: &str) -> Result<Vec<Message>> {
 }
 
 /// Show formatted output for `ChatCompletionRequest`
-fn show_response(
-    dest: impl Write,
-    args: &ChatCompletionArgs,
-    resp: &ChatCompletion,
-) -> Result<(), Error> {
+fn show_response(dest: impl Write, args: &Invocation, resp: &ChatCompletion) -> Result<(), Error> {
     let mut writer = BufWriter::new(dest);
     let choice = match resp.choices.len() {
         1 => &resp.choices[0],
@@ -113,7 +108,7 @@ mod test {
     use predicates::prelude::*;
 
     use crate::{
-        cli::{ChatCompletionArgs, ChatCompletionArgsBuilder, OutputFormat},
+        cli::{Invocation, InvocationBuilder, OutputFormat},
         openai::{ChatCompletion, ChatCompletionBuilder, Choice, FinishReason, Message, Usage},
     };
 
@@ -188,8 +183,8 @@ mod test {
         Ok(())
     }
 
-    fn default_args() -> ChatCompletionArgsBuilder {
-        ChatCompletionArgs::builder()
+    fn default_args() -> InvocationBuilder {
+        Invocation::builder()
             .api_key(Some(String::default()))
             .messages(vec![])
             .model(String::default())
