@@ -1,7 +1,7 @@
 [package]
 name = "cogni"
 authors = ["leoshimo"]
-version = "0.1.3"
+version = "0.2.0"
 edition = "2021"
 description = "Unix native interface for LLMs"
 repository = "https://github.com/leoshimo/cogni"
