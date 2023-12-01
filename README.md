@@ -2,7 +2,7 @@
 
 [![Rust](https://github.com/leoshimo/cogni/actions/workflows/rust.yml/badge.svg)](https://github.com/leoshimo/cogni/actions/workflows/rust.yml)
 
-Unix-minded interface for interacting with LLMs.
+Unix native interface for interacting with LLMs.
 
 ## Focus
 
