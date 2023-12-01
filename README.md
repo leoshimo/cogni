@@ -95,8 +95,9 @@ $ echo "50 + 50" | cogni --system "Solve the following math problem" \
 
 ## Tour of cogni
 
-
 An gallery of examples to get the inspiration flowing
+
+> :warning: `cogni` uses the [OpenAI API](https://openai.com/blog/openai-api), thus *any data fed into program will be sent to OpenAI*. Please be mindful of security and privacy implications.
 
 ### In the Shell
 
@@ -109,6 +110,9 @@ $ curl -s "wttr.in/?1" | cogni -s "Summarize today's weather using the output. R
 
 # Create a ffmpeg cheatsheet from man page
 $ man ffmpeg | cogni -T 300 -s "Create a cheatsheet given a man page. Output should be in Markdown, and should be a set of example usages under headings." > cheatsheet.md
+
+# Catchup after long hiatus from git repo
+$ git show -n 3 | cogni -s "What was I working on recently?"
 ```
 
 ### In Emacs
@@ -128,11 +132,18 @@ For example, the following defines a command that plumbs region to `cogni`, opti
 (global-set-key (kbd "M-c") #'leoshimo/cogni-on-region)
 ```
 
+This binding is useful across a wide range of tasks, for example:
+
+- Normalizing non-uniform text - e.g. unstructured logs to structured JSON events.
+- Editing or organizing text semantically - e.g. rewording or grouping by category.
+- Generating summary for an Org Agenda doc.
+
 ### In Vim
 
-Vim can run external shell commands on entire buffer or visual selection. See `h :!` in vim.
+Vim can run external shell commands on entire buffer or visual selection to
+power similar workflows possible form Emacs. See `h :!` in vim.
 
-This allows workflows like:
-1. Select a list of fruits in visual mode
+For example, given a bulleted list of fruits, it an be sorted by color by:
+
+1. Selecting the list of fruits in visual mode
 2. Type `:!cogni -s "Sort this list by color"`
-3. Selection is replaces - list of fruits is sorted by color
