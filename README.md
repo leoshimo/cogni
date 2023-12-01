@@ -24,7 +24,6 @@ tools without bespoke integrations.
 - Flexible input and output formats (Text, JSON, NDJSON)
 - Standalone binary - No Python required
 - 🚧 Repeatable Scripts via Templates
-- 🚧 Integration with external tools (Emacs, Raycast)
 
 ## Non-Features
 
