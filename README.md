@@ -97,7 +97,7 @@ $ echo "50 + 50" | cogni --system "Solve the following math problem" \
 
 An gallery of examples to get the inspiration flowing
 
-> :warning: `cogni` uses the [OpenAI API](https://openai.com/blog/openai-api), thus *any data fed into program will be sent to OpenAI*. Please be mindful of security and privacy implications.
+> :warning: `cogni` uses the [OpenAI API](https://openai.com/blog/openai-api), thus *any data fed into program will be sent to OpenAI*.
 
 ### In the Shell
 
