@@ -47,7 +47,7 @@ fn cli() -> Command {
         .arg(
             arg!(timeout: -T --timeout <DURATION> "Sets timeout duration in seconds")
                 .value_parser(value_parser!(u64))
-                .default_value("10")
+                .default_value("60")
         )
         .arg(arg!(system_message: -s --system <MSG> "Sets system prompt").required(false))
         .arg(
