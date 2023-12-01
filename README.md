@@ -65,14 +65,14 @@ $ cogni input.txt
 50 + 50 equals 100.
 
 
-# Via flags:
+# Via flags
 #  -s, --system <MSG>            Sets system prompt (Always first)
 #  -a, --assistant <MSG>         Appends assistant message
 #  -u, --user <MSG>              Appends user message
 $ cogni --system "Solve the following math problem" --user "50 + 50"
 50 + 50 equals 100.
 
-# Few-shot prompting with multiple messages
+# Via repetitions of same flags. Useful for few-shot prompting
 $ cogni --system "Solve the following math problem" \
     -u "1 + 1" \
     -a "2" \
@@ -81,7 +81,7 @@ $ cogni --system "Solve the following math problem" \
     -u "50 + 50"
 100
 
-# Via flags AND stdin - flag messages come before stdin / file
+# Via both flags and stdin. Flag messages come before stdin / file
 $ echo "50 + 50" | cogni --system "Solve the following math problem" \
     -u "1 + 1" \
     -a "2" \
