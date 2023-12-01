@@ -140,7 +140,7 @@ This binding is useful across a wide range of tasks, for example:
 ### In Vim
 
 Vim can run external shell commands on entire buffer or visual selection to
-power similar workflows possible form Emacs. See `h :!` in vim.
+power similar workflows possible from Emacs. See `h :!` in vim.
 
 For example, given a bulleted list of fruits, it an be sorted by color by:
 
