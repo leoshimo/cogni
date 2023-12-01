@@ -116,7 +116,7 @@ $ git show -n 3 | cogni -s "What was I working on recently?"
 
 ### In Emacs
 
-Emacs can leverage `shell-command-on-region` to define an interactive command on region.
+Emacs can use `shell-command-on-region` to pipe buffer regions to `cogni`.
 
 For example, the following defines a command that plumbs region to `cogni`, optionally replacing original contents:
 
