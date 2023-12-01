@@ -21,7 +21,7 @@ tools without bespoke integrations.
 
 - Unix-minded Design (IO redirection, composability, interop)
 - Ad-hoc Language Model Scripting
-- Flexible input and output formats (Text, JSON, NDJSON)
+- Flexible input and output formats (Text, JSON, NDJSON, 🚧 Transcript)
 - Standalone binary - No Python required
 - 🚧 Repeatable Scripts via Templates
 
