@@ -115,9 +115,10 @@ $ man ffmpeg \
     | cogni -T 300 -s "Create a cheatsheet given a man page. Output should be in Markdown, and should be a set of example usages under headings." \
     > cheatsheet.md
 
-# Catchup after long hiatus from git repo
-$ git commit -m git show -n 3 \
-    | cogni -s "What was I working on recently?"
+# Create a commit message for staged changes
+$ git diff --staged \
+    | cogni -s "Create a commit message for the given staged changes. Use conventional commit format. Answer in a single-line raw plaintext. Don't use markdown." \
+    | git commit -F -
 ```
 
 ### In Emacs
