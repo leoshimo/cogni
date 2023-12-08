@@ -57,7 +57,8 @@ See `cogni --help` for documentation
 
 ```sh
 # Via stdin
-$ echo "How do I read from stdin?" | cogni
+$ echo "What is 50 + 50?" | cogni
+50 + 50 equals 100.
 
 # Via file
 $ echo "What is 50 + 50?" > input.txt
