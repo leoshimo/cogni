@@ -102,16 +102,22 @@ An gallery of examples to get the inspiration flowing
 
 ```sh
 # Creating Summary of Meeting Transcripts
-$ cat meeting_saved_chat.txt | cogni -s "Extract the links mentioned in this transcript, and provide a high level summary of the discussion points"
+$ cat meeting_saved_chat.txt \
+    | cogni -s "Extract the links mentioned in this transcript, and provide a high level summary of the discussion points"
 
 # Narrate Weather Summary
-$ curl -s "wttr.in/?1" | cogni -s "Summarize today's weather using the output. Respond in 1 short sentence." | say
+$ curl -s "wttr.in/?1" \
+    | cogni -s "Summarize today's weather using the output. Respond in 1 short sentence." \
+    | say
 
 # Create a ffmpeg cheatsheet from man page
-$ man ffmpeg | cogni -T 300 -s "Create a cheatsheet given a man page. Output should be in Markdown, and should be a set of example usages under headings." > cheatsheet.md
+$ man ffmpeg \
+    | cogni -T 300 -s "Create a cheatsheet given a man page. Output should be in Markdown, and should be a set of example usages under headings." \
+    > cheatsheet.md
 
 # Catchup after long hiatus from git repo
-$ git show -n 3 | cogni -s "What was I working on recently?"
+$ git commit -m git show -n 3 \
+    | cogni -s "What was I working on recently?"
 ```
 
 ### In Emacs
