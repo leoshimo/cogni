@@ -65,7 +65,6 @@ $ echo "What is 50 + 50?" > input.txt
 $ cogni input.txt
 50 + 50 equals 100.
 
-
 # Via flags
 #  -s, --system <MSG>            Sets system prompt (Always first)
 #  -a, --assistant <MSG>         Appends assistant message
