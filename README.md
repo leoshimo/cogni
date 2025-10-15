@@ -121,6 +121,41 @@ $ git diff --staged \
     | git commit -F -
 ```
 
+### `cogni_shell` - Example Interactive Shell as a Shell Script
+
+As an example of a shell script using `cogni`, a "chat" / natural language shell interface is provided as an example at `bin/cogni_shell`.
+
+It is a simple (~90 LOC) but a fun and illustrative toy:
+
+```sh
+$ ./bin/cogni_shell
+
+cogni> what markdown files here?
++ ls *.md
+README.md
+
+cogni> open it in text edit
++ open -a TextEdit README.md
+
+cogni> find all rust files in this directory. Open in text edit
++ open -a TextEdit $(find . -type f -iname '*.rs')
+
+cogni> pause music
++ osascript -e 'tell application "Music" to pause'
+
+cogni> in 3 secs, show a notif saying "Hey". Also say it
++ sleep 3 && osascript -e 'display notification "Hey"' && say "Hey"
+
+cogni> what safari tabs are open
++ osascript -e 'tell application "Safari" to get the name of every tab of every window & the URL of every tab of every window'
+leoshimo/cogni: Unix native interface to LLMs, https://github.com/leoshimo/cogni
+
+cogni> look at readme, say a quick summary of it
++ cat README.md
+[.. snip ..]
+The README.md file is for a project named 'cogni', which is a Unix native interface for interacting with large language models (LLMs)... [.. snip ..]
+```
+
 ### In Emacs
 
 Emacs can use `shell-command-on-region` to pipe buffer regions to `cogni`.

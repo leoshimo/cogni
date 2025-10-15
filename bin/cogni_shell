@@ -1,0 +1,100 @@
+#!/usr/bin/env bash
+# cogni_shell - lightweight interactive shell on top of cogni
+#
+
+set -euo pipefail
+trap 'printf "\n"; exit 130' INT
+
+messages=(
+  "--system" "You help convert natural language into safe macOS shell commands. Reply with exactly one directive per turn. Emit shell commands without any prefix. Narrate or ask questions using '!print ' lines only; never send plain text without '!print'. Do not ask the user to provide commands—propose the next step yourself. Only ask clarifying questions when essential, prefacing them with '!print ?'. When the task is complete, reply with '!stop'. After every command I run, I send you another user message that begins with 'Command output:'. Use that context before choosing the next step."
+  "--user"   "show the current working directory"
+  "--assistant" "pwd"
+  "--user"   'Command output:\n/Users/example'
+  "--assistant" "!stop"
+  "--user"   "print hello world to the terminal"
+  "--assistant" 'echo "Hello, world!"'
+  "--user"   'Command output:\nHello, world!'
+  "--assistant" "!stop"
+)
+
+while true; do
+  if ! read -erp 'cogni> ' request; then
+    printf "\n"
+    break
+  fi
+  [[ "$request" =~ ^[[:space:]]*$ ]] && continue
+  [[ "$request" == ":quit" || "$request" == ":exit" ]] && break
+
+  messages+=(--user "$request")
+
+  while true; do
+    response=$(cogni "${messages[@]}")
+    response=${response//$'\r'/}
+    directive=${response%%$'\n'*}
+
+    if [[ -z "$directive" ]]; then
+      printf 'No response from model.\n' >&2
+      break
+    fi
+
+    messages+=(--assistant "$directive")
+
+    if [[ "$directive" == "!stop" ]]; then
+      break
+    fi
+
+    if [[ "$directive" == "!print"* ]]; then
+      text=${directive#!print}
+      text=${text# }
+      [[ -n "$text" ]] && printf '%s\n' "$text"
+      messages+=(--user "Narration displayed.")
+      continue
+    fi
+
+    if [[ "$directive" == \!* ]]; then
+      printf '%s\n' "${directive:1}"
+      messages+=(--user "Message shown to user.")
+      continue
+    fi
+
+    treat_as_command=0
+    if [[ "$directive" =~ ^[^[:space:]]+= ]]; then
+      treat_as_command=1
+    else
+      first_word=${directive%%[[:space:]]*}
+      if [[ -z "$first_word" ]]; then
+        treat_as_command=0
+      elif command -v "$first_word" >/dev/null 2>&1; then
+        treat_as_command=1
+      else
+        treat_as_command=0
+      fi
+    fi
+
+    if [[ $treat_as_command -eq 0 ]]; then
+      printf '%s\n' "$directive"
+      messages+=(--user "Narration displayed.")
+      continue
+    fi
+
+    printf '+ %s\n' "$directive"
+    if output=$(bash -lc "$directive" 2>&1); then
+      [[ -n "$output" ]] && printf '%s\n' "$output"
+      if [[ -n "$output" ]]; then
+        messages+=("--user" $'Command output:\n'"$output")
+      else
+        messages+=("--user" "Command output: (no output)")
+      fi
+    else
+      exit_status=$?
+      [[ -n "$output" ]] && printf '%s\n' "$output"
+      printf 'Command failed (exit %d)\n' "$exit_status" >&2
+      if [[ -n "$output" ]]; then
+        printf -v failure_output 'Command output (exit %d):\n%s' "$exit_status" "$output"
+      else
+        printf -v failure_output 'Command output (exit %d): (no output)' "$exit_status"
+      fi
+      messages+=("--user" "$failure_output")
+    fi
+  done
+done
