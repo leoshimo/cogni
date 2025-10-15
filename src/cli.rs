@@ -2,7 +2,7 @@
 
 use std::time::Duration;
 
-use crate::openai::Message;
+use crate::openai::{Message, ReasoningEffort};
 use clap::{
     arg, builder::PossibleValue, command, value_parser, ArgGroup, ArgMatches, Command, ValueEnum,
 };
@@ -18,6 +18,8 @@ pub struct Invocation {
     pub output_format: OutputFormat,
     pub file: String,
     pub timeout: Duration,
+    #[builder(default)]
+    pub reasoning_effort: Option<ReasoningEffort>,
 }
 
 /// The format that invocation's results are in
@@ -38,7 +40,7 @@ pub fn parse() -> Invocation {
 /// Top-level command
 fn cli() -> Command {
     command!()
-        .arg(arg!(model: -m --model <MODEL> "Sets model. See https://platform.openai.com/docs/models for model identifiers.").default_value("gpt-4-1106-preview"))
+        .arg(arg!(model: -m --model <MODEL> "Sets model. See https://platform.openai.com/docs/models for model identifiers.").default_value("gpt-5"))
         .arg(
             arg!(temperature: -t --temperature <TEMP> "Sets temperature")
                 .value_parser(value_parser!(f32))
@@ -69,6 +71,11 @@ fn cli() -> Command {
                     ("jsonp", "true", Some("jsonpretty")),
                 ])
                 .default_value("plaintext"),
+        )
+        .arg(
+            arg!(reasoning_effort: --"reasoning-effort" <EFFORT> "Sets reasoning effort (low, medium, high)")
+                .value_parser(value_parser!(ReasoningEffort))
+                .required(false),
         )
         .arg(arg!(--json "Shorthand for --output_format json"))
         .arg(arg!(--jsonp "Shorthand for --output_format jsonpretty"))
@@ -103,6 +110,10 @@ impl From<ArgMatches> for Invocation {
             .expect("File is required")
             .to_string();
 
+        let reasoning_effort = matches
+            .get_one::<ReasoningEffort>("reasoning_effort")
+            .copied();
+
         Self {
             api_key,
             messages,
@@ -111,6 +122,7 @@ impl From<ArgMatches> for Invocation {
             timeout,
             output_format,
             file,
+            reasoning_effort,
         }
     }
 }
@@ -165,6 +177,20 @@ impl ValueEnum for OutputFormat {
     }
 }
 
+impl ValueEnum for ReasoningEffort {
+    fn value_variants<'a>() -> &'a [Self] {
+        &[Self::Low, Self::Medium, Self::High]
+    }
+
+    fn to_possible_value(&self) -> Option<PossibleValue> {
+        Some(match self {
+            Self::Low => PossibleValue::new("low"),
+            Self::Medium => PossibleValue::new("medium"),
+            Self::High => PossibleValue::new("high"),
+        })
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
@@ -196,6 +222,16 @@ mod test {
             ],
             "messages should contain all messages in order"
         );
+        Ok(())
+    }
+
+    #[test]
+    fn chat_reasoning_effort_flag() -> Result<()> {
+        let args = cli()
+            .try_get_matches_from(vec!["cogni", "-u", "USER", "--reasoning-effort", "high"])
+            .map(Invocation::from)?;
+
+        assert_eq!(args.reasoning_effort, Some(ReasoningEffort::High));
         Ok(())
     }
 

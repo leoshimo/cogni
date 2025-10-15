@@ -1,7 +1,7 @@
 //! Implements chat subcommand
 
 use crate::cli::{Invocation, OutputFormat};
-use crate::openai::{self, ChatCompletion, FinishReason, Message};
+use crate::openai::{self, FinishReason, Message, Reasoning, Response};
 use crate::parse;
 use crate::Error;
 
@@ -26,17 +26,25 @@ pub async fn exec(args: Invocation) -> Result<()> {
         return Err(Error::NoMessagesProvided.into());
     }
 
-    // TODO: Lifetimes for `ChatCompletionRequest` fields
-    let request = openai::ChatCompletionRequest::builder()
+    // TODO: Lifetimes for `ResponseRequest` fields
+    let mut builder = openai::ResponseRequest::builder();
+
+    builder
         .model(args.model.clone())
         .messages(msgs)
         .temperature(args.temperature)
-        .timeout(args.timeout)
+        .timeout(args.timeout);
+
+    if let Some(effort) = args.reasoning_effort {
+        builder.reasoning(Some(Reasoning::from_effort(effort)));
+    }
+
+    let request = builder
         .build()
         .with_context(|| "failed to create request")?;
 
     let res = client
-        .chat_complete(&request)
+        .create_response(&request)
         .await
         .with_context(|| "failed to fetch request")?;
 
@@ -64,8 +72,8 @@ fn read_messages_from_file(file: &str) -> Result<Vec<Message>> {
     }
 }
 
-/// Show formatted output for `ChatCompletionRequest`
-fn show_response(dest: impl Write, args: &Invocation, resp: &ChatCompletion) -> Result<(), Error> {
+/// Show formatted output for a Responses API result
+fn show_response(dest: impl Write, args: &Invocation, resp: &Response) -> Result<(), Error> {
     let mut writer = BufWriter::new(dest);
     let choice = match resp.choices.len() {
         1 => &resp.choices[0],
@@ -109,7 +117,7 @@ mod test {
 
     use crate::{
         cli::{Invocation, InvocationBuilder, OutputFormat},
-        openai::{ChatCompletion, ChatCompletionBuilder, Choice, FinishReason, Message, Usage},
+        openai::{Choice, FinishReason, Message, Response, ResponseBuilder, Usage},
     };
 
     use super::*;
@@ -195,8 +203,8 @@ mod test {
             .to_owned()
     }
 
-    fn default_resp() -> ChatCompletionBuilder {
-        ChatCompletion::builder()
+    fn default_resp() -> ResponseBuilder {
+        Response::builder()
             .created(DateTime::default())
             .choices(vec![])
             .model(String::default())

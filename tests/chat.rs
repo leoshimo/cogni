@@ -31,31 +31,36 @@ fn chat_user_message_from_flag() {
     let mut server = mockito::Server::new();
 
     let mock = server
-        .mock("POST", "/v1/chat/completions")
+        .mock("POST", "/v1/responses")
         .with_header("content-type", "application/json")
         .with_header("authorization", "Bearer ABCDE")
         .match_body(mockito::Matcher::PartialJson(json!({
-            "messages": [{
-             "content": "Hello",
-             "role": "user",
+            "model": "gpt-5",
+            "input": [{
+                "role": "user",
+                "content": [{
+                    "type": "text",
+                    "text": "Hello"
+                }]
             }]
         })))
         .with_body(
             r#"{
-             "id": "chatcmpl-XXXXX",
+             "id": "resp_XXXXX",
              "created": 1688413145,
-             "model": "gpt-3.5-turbo-0613",
-             "choices": [{
-                 "index": 0,
-                 "message": {
-                     "role": "assistant",
-                     "content": "ASSISTANT REPLY"
-                 },
-                 "finish_reason": "stop"
+             "model": "gpt-5",
+             "output": [{
+                 "id": "msg_XXXXX",
+                 "type": "message",
+                 "role": "assistant",
+                 "content": [{
+                     "type": "output_text",
+                     "text": "ASSISTANT REPLY"
+                 }]
              }],
              "usage": {
-                 "prompt_tokens": 8,
-                 "completion_tokens": 9,
+                 "input_tokens": 8,
+                 "output_tokens": 9,
                  "total_tokens": 17
              }
         }"#,
@@ -80,31 +85,93 @@ fn chat_user_message_from_stdin() {
     let mut server = mockito::Server::new();
 
     let mock = server
-        .mock("POST", "/v1/chat/completions")
+        .mock("POST", "/v1/responses")
         .with_header("content-type", "application/json")
         .with_header("authorization", "Bearer ABCDE")
         .match_body(mockito::Matcher::PartialJson(json!({
-            "messages": [{
-             "content": "Hello",
-             "role": "user",
+            "model": "gpt-5",
+            "input": [{
+                "role": "user",
+                "content": [{
+                    "type": "text",
+                    "text": "Hello"
+                }]
             }]
         })))
         .with_body(
             r#"{
-             "id": "chatcmpl-XXXXX",
+             "id": "resp_XXXXX",
              "created": 1688413145,
-             "model": "gpt-3.5-turbo-0613",
-             "choices": [{
-                 "index": 0,
-                 "message": {
-                     "role": "assistant",
-                     "content": "ASSISTANT REPLY"
-                 },
-                 "finish_reason": "stop"
+             "model": "gpt-5",
+             "output": [{
+                 "id": "msg_XXXXX",
+                 "type": "message",
+                 "role": "assistant",
+                 "content": [{
+                     "type": "output_text",
+                     "text": "ASSISTANT REPLY"
+                 }]
+             }],
+            "usage": {
+                "input_tokens": 8,
+                "output_tokens": 9,
+                "total_tokens": 17
+            }
+       }"#,
+        )
+        .create();
+
+    let cmd = Command::cargo_bin("cogni")
+        .unwrap()
+        .write_stdin("Hello")
+        .env("OPENAI_API_ENDPOINT", server.url())
+        .env("OPENAI_API_KEY", "ABCDE")
+        .assert();
+
+    mock.assert();
+
+    cmd.success()
+        .stdout(predicate::str::contains("ASSISTANT REPLY"));
+}
+
+#[test]
+fn chat_with_reasoning_effort() {
+    let mut server = mockito::Server::new();
+
+    let mock = server
+        .mock("POST", "/v1/responses")
+        .with_header("content-type", "application/json")
+        .with_header("authorization", "Bearer ABCDE")
+        .match_body(mockito::Matcher::PartialJson(json!({
+            "model": "gpt-5",
+            "reasoning": {
+                "effort": "medium"
+            },
+            "input": [{
+                "role": "user",
+                "content": [{
+                    "type": "text",
+                    "text": "Hello"
+                }]
+            }]
+        })))
+        .with_body(
+            r#"{
+             "id": "resp_XXXXX",
+             "created": 1688413145,
+             "model": "gpt-5",
+             "output": [{
+                 "id": "msg_XXXXX",
+                 "type": "message",
+                 "role": "assistant",
+                 "content": [{
+                     "type": "output_text",
+                     "text": "ASSISTANT REPLY"
+                 }]
              }],
              "usage": {
-                 "prompt_tokens": 8,
-                 "completion_tokens": 9,
+                 "input_tokens": 8,
+                 "output_tokens": 9,
                  "total_tokens": 17
              }
         }"#,
@@ -113,7 +180,7 @@ fn chat_user_message_from_stdin() {
 
     let cmd = Command::cargo_bin("cogni")
         .unwrap()
-        .write_stdin("Hello")
+        .args(["-u", "Hello", "--reasoning-effort", "medium"])
         .env("OPENAI_API_ENDPOINT", server.url())
         .env("OPENAI_API_KEY", "ABCDE")
         .assert();
@@ -134,46 +201,66 @@ fn chat_multiple_messages() {
     let mut server = mockito::Server::new();
 
     let mock = server
-        .mock("POST", "/v1/chat/completions")
+        .mock("POST", "/v1/responses")
         .with_header("content-type", "application/json")
         .with_header("authorization", "Bearer ABCDE")
         .match_body(mockito::Matcher::PartialJson(json!({
-            "messages": [{
+            "model": "gpt-5",
+            "input": [{
                 "role": "system",
-                "content": "SYSTEM",
+                "content": [{
+                    "type": "text",
+                    "text": "SYSTEM"
+                }],
             }, {
                 "role": "user",
-                "content": "USER_1",
+                "content": [{
+                    "type": "text",
+                    "text": "USER_1"
+                }],
             }, {
                 "role": "assistant",
-                "content": "ASSI_1",
+                "content": [{
+                    "type": "text",
+                    "text": "ASSI_1"
+                }],
             }, {
                 "role": "user",
-                "content": "USER_2",
+                "content": [{
+                    "type": "text",
+                    "text": "USER_2"
+                }],
             }, {
                 "role": "assistant",
-                "content": "ASSI_2",
+                "content": [{
+                    "type": "text",
+                    "text": "ASSI_2"
+                }],
             }, {
                 "role": "user",
-                "content": "USER_STDIN",
+                "content": [{
+                    "type": "text",
+                    "text": "USER_STDIN"
+                }],
             }]
         })))
         .with_body(
             r#"{
-             "id": "chatcmpl-XXXXX",
+             "id": "resp_XXXXX",
              "created": 1688413145,
-             "model": "gpt-3.5-turbo-0613",
-             "choices": [{
-                 "index": 0,
-                 "message": {
-                     "role": "assistant",
-                     "content": "ASSISTANT REPLY"
-                 },
-                 "finish_reason": "stop"
+             "model": "gpt-5",
+             "output": [{
+                 "id": "msg_XXXXX",
+                 "type": "message",
+                 "role": "assistant",
+                 "content": [{
+                     "type": "output_text",
+                     "text": "ASSISTANT REPLY"
+                 }]
              }],
              "usage": {
-                 "prompt_tokens": 8,
-                 "completion_tokens": 9,
+                 "input_tokens": 8,
+                 "output_tokens": 9,
                  "total_tokens": 17
              }
         }"#,
@@ -202,14 +289,18 @@ fn chat_api_error() {
     let mut server = mockito::Server::new();
 
     let mock = server
-        .mock("POST", "/v1/chat/completions")
+        .mock("POST", "/v1/responses")
         .with_status(400)
         .with_header("content-type", "application/json")
         .with_header("authorization", "Bearer ABCDE")
         .match_body(mockito::Matcher::PartialJson(json!({
-            "messages": [{
+            "model": "gpt-5",
+            "input": [{
                 "role": "user",
-                "content": "USER",
+                "content": [{
+                    "type": "text",
+                    "text": "USER"
+                }],
             }],
             "temperature": 1000.0 // invalid param
         })))
@@ -249,31 +340,36 @@ fn chat_user_message_from_file() {
     infile.write_str("Hello from file").unwrap();
 
     let mock = server
-        .mock("POST", "/v1/chat/completions")
+        .mock("POST", "/v1/responses")
         .with_header("content-type", "application/json")
         .with_header("authorization", "Bearer ABCDE")
         .match_body(mockito::Matcher::PartialJson(json!({
-            "messages": [{
+            "model": "gpt-5",
+            "input": [{
                 "role": "user",
-                "content": "Hello from file",
+                "content": [{
+                    "type": "text",
+                    "text": "Hello from file"
+                }],
             }],
         })))
         .with_body(
             r#"{
-             "id": "chatcmpl-XXXXX",
+             "id": "resp_XXXXX",
              "created": 1688413145,
-             "model": "gpt-3.5-turbo-0613",
-             "choices": [{
-                 "index": 0,
-                 "message": {
-                     "role": "assistant",
-                     "content": "ASSISTANT REPLY"
-                 },
-                 "finish_reason": "stop"
+             "model": "gpt-5",
+             "output": [{
+                 "id": "msg_XXXXX",
+                 "type": "message",
+                 "role": "assistant",
+                 "content": [{
+                     "type": "output_text",
+                     "text": "ASSISTANT REPLY"
+                 }]
              }],
              "usage": {
-                 "prompt_tokens": 8,
-                 "completion_tokens": 9,
+                 "input_tokens": 8,
+                 "output_tokens": 9,
                  "total_tokens": 17
              }
         }"#,
