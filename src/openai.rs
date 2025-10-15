@@ -226,14 +226,13 @@ impl ResponseRequest {
             "temperature": self.temperature,
         });
 
-        if let Some(reasoning) = &self.reasoning {
-            if let Some(obj) = payload.as_object_mut() {
+        if let Some(reasoning) = &self.reasoning
+            && let Some(obj) = payload.as_object_mut() {
                 obj.insert(
                     "reasoning".to_string(),
                     serde_json::to_value(reasoning).expect("failed to serialize reasoning"),
                 );
             }
-        }
 
         payload
     }
