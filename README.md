@@ -123,7 +123,7 @@ $ git diff --staged \
 
 ### `cogni_shell` - Example Interactive Shell as a Shell Script
 
-As an example of a shell script using `cogni`, a "chat" / natural language shell interface is provided as an example at `bin/cogni_shell`.
+As an example scripting with `cogni` a "chat" interface is provided at `bin/cogni_shell`.
 
 It is a simple (~90 LOC) but a fun and illustrative toy:
 
