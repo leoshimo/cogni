@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
 use derive_builder::Builder;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 
 /// Convienience Client for OpenAI Responses API
 pub struct Client {
@@ -27,7 +27,8 @@ pub struct Client {
 pub struct ResponseRequest {
     model: String,
     messages: Vec<Message>,
-    temperature: f32,
+    #[builder(default)]
+    temperature: Option<f32>,
     timeout: Duration,
     #[builder(default)]
     reasoning: Option<Reasoning>,
@@ -191,7 +192,7 @@ impl Message {
         json!({
             "role": self.role.as_str(),
             "content": [{
-                "type": "text",
+                "type": "input_text",
                 "text": self.content.clone(),
             }]
         })
@@ -223,16 +224,22 @@ impl ResponseRequest {
         let mut payload = json!({
             "model": self.model,
             "input": input,
-            "temperature": self.temperature,
         });
 
+        if let Some(temperature) = self.temperature
+            && let Some(obj) = payload.as_object_mut()
+        {
+            obj.insert("temperature".to_string(), json!(temperature));
+        }
+
         if let Some(reasoning) = &self.reasoning
-            && let Some(obj) = payload.as_object_mut() {
-                obj.insert(
-                    "reasoning".to_string(),
-                    serde_json::to_value(reasoning).expect("failed to serialize reasoning"),
-                );
-            }
+            && let Some(obj) = payload.as_object_mut()
+        {
+            obj.insert(
+                "reasoning".to_string(),
+                serde_json::to_value(reasoning).expect("failed to serialize reasoning"),
+            );
+        }
 
         payload
     }
@@ -246,6 +253,7 @@ impl Response {
 
 #[derive(Debug, Deserialize)]
 struct ResponsesAPIResponse {
+    #[serde(rename = "created_at", alias = "created")]
     #[serde(with = "ts_seconds")]
     created: DateTime<Utc>,
     model: String,
@@ -419,7 +427,7 @@ mod test {
         let request = ResponseRequest::builder()
             .model("gpt-5".to_string())
             .messages(vec![Message::user("Hello")])
-            .temperature(0.0)
+            .temperature(Some(0.0))
             .timeout(Duration::from_secs(30))
             .reasoning(Some(Reasoning::from_effort(ReasoningEffort::High)))
             .build()
@@ -429,6 +437,7 @@ mod test {
 
         assert_eq!(payload["reasoning"]["effort"], "high");
         assert_eq!(payload["model"], "gpt-5");
+        assert_eq!(payload["temperature"], 0.0);
 
         Ok(())
     }
@@ -438,7 +447,6 @@ mod test {
         let request = ResponseRequest::builder()
             .model("gpt-5".to_string())
             .messages(vec![Message::user("Hello")])
-            .temperature(0.0)
             .timeout(Duration::from_secs(30))
             .build()
             .expect("request builds");
@@ -446,6 +454,7 @@ mod test {
         let payload = request.to_payload();
 
         assert!(payload.get("reasoning").is_none());
+        assert!(payload.get("temperature").is_none());
         Ok(())
     }
 

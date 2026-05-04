@@ -35,11 +35,11 @@ fn chat_user_message_from_flag() {
         .with_header("content-type", "application/json")
         .with_header("authorization", "Bearer ABCDE")
         .match_body(mockito::Matcher::PartialJson(json!({
-            "model": "gpt-5",
+            "model": "gpt-5.5",
             "input": [{
                 "role": "user",
                 "content": [{
-                    "type": "text",
+                    "type": "input_text",
                     "text": "Hello"
                 }]
             }]
@@ -48,7 +48,7 @@ fn chat_user_message_from_flag() {
             r#"{
              "id": "resp_XXXXX",
              "created": 1688413145,
-             "model": "gpt-5",
+             "model": "gpt-5.5",
              "output": [{
                  "id": "msg_XXXXX",
                  "type": "message",
@@ -89,11 +89,11 @@ fn chat_user_message_from_stdin() {
         .with_header("content-type", "application/json")
         .with_header("authorization", "Bearer ABCDE")
         .match_body(mockito::Matcher::PartialJson(json!({
-            "model": "gpt-5",
+            "model": "gpt-5.5",
             "input": [{
                 "role": "user",
                 "content": [{
-                    "type": "text",
+                    "type": "input_text",
                     "text": "Hello"
                 }]
             }]
@@ -102,7 +102,7 @@ fn chat_user_message_from_stdin() {
             r#"{
              "id": "resp_XXXXX",
              "created": 1688413145,
-             "model": "gpt-5",
+             "model": "gpt-5.5",
              "output": [{
                  "id": "msg_XXXXX",
                  "type": "message",
@@ -143,14 +143,14 @@ fn chat_with_reasoning_effort() {
         .with_header("content-type", "application/json")
         .with_header("authorization", "Bearer ABCDE")
         .match_body(mockito::Matcher::PartialJson(json!({
-            "model": "gpt-5",
+            "model": "gpt-5.5",
             "reasoning": {
                 "effort": "medium"
             },
             "input": [{
                 "role": "user",
                 "content": [{
-                    "type": "text",
+                    "type": "input_text",
                     "text": "Hello"
                 }]
             }]
@@ -159,7 +159,7 @@ fn chat_with_reasoning_effort() {
             r#"{
              "id": "resp_XXXXX",
              "created": 1688413145,
-             "model": "gpt-5",
+             "model": "gpt-5.5",
              "output": [{
                  "id": "msg_XXXXX",
                  "type": "message",
@@ -205,41 +205,41 @@ fn chat_multiple_messages() {
         .with_header("content-type", "application/json")
         .with_header("authorization", "Bearer ABCDE")
         .match_body(mockito::Matcher::PartialJson(json!({
-            "model": "gpt-5",
+            "model": "gpt-5.5",
             "input": [{
                 "role": "system",
                 "content": [{
-                    "type": "text",
+                    "type": "input_text",
                     "text": "SYSTEM"
                 }],
             }, {
                 "role": "user",
                 "content": [{
-                    "type": "text",
+                    "type": "input_text",
                     "text": "USER_1"
                 }],
             }, {
                 "role": "assistant",
                 "content": [{
-                    "type": "text",
+                    "type": "input_text",
                     "text": "ASSI_1"
                 }],
             }, {
                 "role": "user",
                 "content": [{
-                    "type": "text",
+                    "type": "input_text",
                     "text": "USER_2"
                 }],
             }, {
                 "role": "assistant",
                 "content": [{
-                    "type": "text",
+                    "type": "input_text",
                     "text": "ASSI_2"
                 }],
             }, {
                 "role": "user",
                 "content": [{
-                    "type": "text",
+                    "type": "input_text",
                     "text": "USER_STDIN"
                 }],
             }]
@@ -248,7 +248,7 @@ fn chat_multiple_messages() {
             r#"{
              "id": "resp_XXXXX",
              "created": 1688413145,
-             "model": "gpt-5",
+             "model": "gpt-5.5",
              "output": [{
                  "id": "msg_XXXXX",
                  "type": "message",
@@ -294,11 +294,11 @@ fn chat_api_error() {
         .with_header("content-type", "application/json")
         .with_header("authorization", "Bearer ABCDE")
         .match_body(mockito::Matcher::PartialJson(json!({
-            "model": "gpt-5",
+            "model": "gpt-5.5",
             "input": [{
                 "role": "user",
                 "content": [{
-                    "type": "text",
+                    "type": "input_text",
                     "text": "USER"
                 }],
             }],
@@ -344,11 +344,11 @@ fn chat_user_message_from_file() {
         .with_header("content-type", "application/json")
         .with_header("authorization", "Bearer ABCDE")
         .match_body(mockito::Matcher::PartialJson(json!({
-            "model": "gpt-5",
+            "model": "gpt-5.5",
             "input": [{
                 "role": "user",
                 "content": [{
-                    "type": "text",
+                    "type": "input_text",
                     "text": "Hello from file"
                 }],
             }],
@@ -357,7 +357,7 @@ fn chat_user_message_from_file() {
             r#"{
              "id": "resp_XXXXX",
              "created": 1688413145,
-             "model": "gpt-5",
+             "model": "gpt-5.5",
              "output": [{
                  "id": "msg_XXXXX",
                  "type": "message",

@@ -4,7 +4,7 @@ use std::time::Duration;
 
 use crate::openai::{Message, ReasoningEffort};
 use clap::{
-    arg, builder::PossibleValue, command, value_parser, ArgGroup, ArgMatches, Command, ValueEnum,
+    ArgGroup, ArgMatches, Command, ValueEnum, arg, builder::PossibleValue, command, value_parser,
 };
 use derive_builder::Builder;
 
@@ -14,7 +14,8 @@ pub struct Invocation {
     pub api_key: Option<String>,
     pub messages: Vec<Message>,
     pub model: String,
-    pub temperature: f32,
+    #[builder(default)]
+    pub temperature: Option<f32>,
     pub output_format: OutputFormat,
     pub file: String,
     pub timeout: Duration,
@@ -40,11 +41,10 @@ pub fn parse() -> Invocation {
 /// Top-level command
 fn cli() -> Command {
     command!()
-        .arg(arg!(model: -m --model <MODEL> "Sets model. See https://platform.openai.com/docs/models for model identifiers.").default_value("gpt-5"))
+        .arg(arg!(model: -m --model <MODEL> "Sets model. See https://platform.openai.com/docs/models for model identifiers.").default_value("gpt-5.5"))
         .arg(
             arg!(temperature: -t --temperature <TEMP> "Sets temperature")
-                .value_parser(value_parser!(f32))
-                .default_value("0.0"),
+                .value_parser(value_parser!(f32)),
         )
         .arg(
             arg!(timeout: -T --timeout <DURATION> "Sets timeout duration in seconds")
@@ -92,9 +92,7 @@ impl From<ArgMatches> for Invocation {
             .expect("Models is required")
             .to_string();
 
-        let temperature = *matches
-            .get_one::<f32>("temperature")
-            .expect("Temperature is required");
+        let temperature = matches.get_one::<f32>("temperature").copied();
 
         let timeout = matches
             .get_one::<u64>("timeout")
@@ -272,7 +270,8 @@ mod test {
                 Message::assistant("ROBOT"),
                 Message::user("USER2"),
             ],
-            "system message is always brought to front, followed by assistant and user messages in order");
+            "system message is always brought to front, followed by assistant and user messages in order"
+        );
 
         Ok(())
     }

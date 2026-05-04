@@ -1,9 +1,9 @@
 //! Implements chat subcommand
 
+use crate::Error;
 use crate::cli::{Invocation, OutputFormat};
 use crate::openai::{self, FinishReason, Message, Reasoning, Response};
 use crate::parse;
-use crate::Error;
 
 use anyhow::{Context, Result};
 use std::fs::File;
@@ -81,7 +81,7 @@ fn show_response(dest: impl Write, args: &Invocation, resp: &Response) -> Result
             return Err(Error::UnexpectedResponse(format!(
                 "Unexpected number of choices in response: {:?}",
                 resp
-            )))
+            )));
         }
     };
 
@@ -100,7 +100,7 @@ fn show_response(dest: impl Write, args: &Invocation, resp: &Response) -> Result
             return Err(Error::UnexpectedResponse(format!(
                 "Received unrecognized stop reason for choice: {:?}",
                 choice
-            )))
+            )));
         }
     }
 
@@ -196,7 +196,7 @@ mod test {
             .api_key(Some(String::default()))
             .messages(vec![])
             .model(String::default())
-            .temperature(1.0)
+            .temperature(Some(1.0))
             .output_format(OutputFormat::Plaintext)
             .timeout(Duration::from_secs(10))
             .file("-".to_string())
